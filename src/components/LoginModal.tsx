@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { UPM_DEPARTMENTS, UserProfile, LoginRecord } from '../types';
+import { authenticateWithFirebase, saveUserProfileToFirestore } from '../lib/firebaseService';
 import {
   Building2,
   Mail,
@@ -49,7 +50,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onLoginSuccess, 
     }
   };
 
-  const validateAndSubmit = (e: React.FormEvent) => {
+  const validateAndSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -72,6 +73,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onLoginSuccess, 
         setError('Invalid HQ Reviewer credentials! Please verify your authorized ID and password.');
         return;
       }
+
+      // Authenticate with Firebase Auth
+      await authenticateWithFirebase('perolehan_hsaas@upm.edu.my', trimmedHqPassword);
 
       const nowIso = new Date().toISOString();
       const formattedTimestamp = new Date().toLocaleString('en-GB', {
@@ -103,6 +107,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onLoginSuccess, 
         deviceInfo: `${navigator.userAgent || 'Web Browser'} - Authenticated HQ Reviewer`,
       };
 
+      saveUserProfileToFirestore(updatedUser);
       onLoginSuccess(updatedUser, newRecord);
       return;
     }
@@ -129,6 +134,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onLoginSuccess, 
       setError('Please select your official Department / Section / Unit.');
       return;
     }
+
+    // Authenticate with Firebase Auth
+    await authenticateWithFirebase(trimmedEmail);
 
     const nowIso = new Date().toISOString();
     const formattedTimestamp = new Date().toLocaleString('en-GB', {
@@ -159,6 +167,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onLoginSuccess, 
       deviceInfo: navigator.userAgent || 'Web Browser',
     };
 
+    saveUserProfileToFirestore(updatedUser);
     onLoginSuccess(updatedUser, newRecord);
   };
 

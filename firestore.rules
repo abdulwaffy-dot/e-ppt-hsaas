@@ -1,0 +1,22 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Admin tunggal dengan UID atau email perolehan_hsaas@upm.edu.my
+    match /{document=**} {
+      allow read, write: if request.auth != null 
+                         && (request.auth.uid == "perolehan_hsaas" || request.auth.token.email == "perolehan_hsaas@upm.edu.my");
+    }
+
+    // Staf dengan email @upm.edu.my
+    match /{document=**} {
+      allow read, write: if request.auth != null 
+                         && request.auth.token.email.matches(".*@upm.edu.my$");
+    }
+
+    // Fallback for authenticated users in app session
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

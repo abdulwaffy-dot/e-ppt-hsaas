@@ -12,6 +12,16 @@ import {
   AnnualBudgets,
 } from './types';
 import { INITIAL_APPLICATIONS, INITIAL_LOGIN_LOGS, INITIAL_ANNUAL_BUDGETS } from './data/mockData';
+import {
+  subscribeToApplications,
+  subscribeToAnnualBudgets,
+  subscribeToLoginLogs,
+  saveApplicationToFirestore,
+  deleteApplicationFromFirestore,
+  saveAnnualBudgetsToFirestore,
+  addLoginLogToFirestore,
+  authenticateWithFirebase,
+} from './lib/firebaseService';
 
 import { Navbar } from './components/Navbar';
 import { FooterBar } from './components/FooterBar';
@@ -131,6 +141,9 @@ export default function App() {
   // Save to LocalStorage effects
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(user));
+    if (user.email) {
+      authenticateWithFirebase(user.email);
+    }
   }, [user]);
 
   useEffect(() => {
@@ -144,6 +157,27 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_BUDGETS, JSON.stringify(annualBudgets));
   }, [annualBudgets]);
+
+  // Real-time Firestore Subscriptions
+  useEffect(() => {
+    const unsubApps = subscribeToApplications((firestoreApps) => {
+      setApplications(firestoreApps);
+    });
+
+    const unsubBudgets = subscribeToAnnualBudgets((firestoreBudgets) => {
+      setAnnualBudgets(firestoreBudgets);
+    });
+
+    const unsubLogs = subscribeToLoginLogs((firestoreLogs) => {
+      setLoginLogs(firestoreLogs);
+    });
+
+    return () => {
+      unsubApps();
+      unsubBudgets();
+      unsubLogs();
+    };
+  }, []);
 
   // Sync state across browser tabs/windows
   useEffect(() => {
@@ -180,6 +214,7 @@ export default function App() {
   const handleLoginSuccess = (updatedUser: UserProfile, newRecord: LoginRecord) => {
     setUser(updatedUser);
     setLoginLogs((prev) => [newRecord, ...prev]);
+    addLoginLogToFirestore(newRecord);
     setIsLoggedIn(true);
     sessionStorage.setItem('upm_eppt_logged_in', 'true');
     setIsLoginModalOpen(false);
@@ -217,6 +252,8 @@ export default function App() {
       return [app, ...prev];
     });
 
+    saveApplicationToFirestore(app);
+
     // Update key in update timestamp for footer display
     const formattedTimestamp = new Date().toLocaleString('en-GB', {
       day: '2-digit',
@@ -248,6 +285,7 @@ export default function App() {
     }
     if (window.confirm('Adakah anda pasti mahu memadam permohonan perolehan ini?')) {
       setApplications((prev) => prev.filter((a) => a.id !== id));
+      deleteApplicationFromFirestore(id);
     }
   };
 
@@ -263,36 +301,36 @@ export default function App() {
         alert(`Akses Dibataskan: Anda hanya boleh menghantar draf permohonan milik anda sendiri (${user.name}).`);
         return;
       }
+
+      const updatedApp: ProcurementApplication = {
+        ...targetApp,
+        status: 'Submitted',
+        updatedAt: new Date().toISOString(),
+      };
+
+      setApplications((prev) =>
+        prev.map((app) => (app.id === id ? updatedApp : app))
+      );
+      saveApplicationToFirestore(updatedApp);
     }
-    setApplications((prev) =>
-      prev.map((app) => {
-        if (app.id === id) {
-          return {
-            ...app,
-            status: 'Submitted',
-            updatedAt: new Date().toISOString(),
-          };
-        }
-        return app;
-      })
-    );
   };
 
   // HQ Review Decision Handler
   const handleHQDecision = (id: string, decision: HQDecision) => {
-    setApplications((prev) =>
-      prev.map((app) => {
-        if (app.id === id) {
-          return {
-            ...app,
-            status: decision.status,
-            hqDecision: decision,
-            updatedAt: decision.decisionDate,
-          };
-        }
-        return app;
-      })
-    );
+    const targetApp = applications.find((a) => a.id === id);
+    if (targetApp) {
+      const updatedApp: ProcurementApplication = {
+        ...targetApp,
+        status: decision.status,
+        hqDecision: decision,
+        updatedAt: decision.decisionDate,
+      };
+
+      setApplications((prev) =>
+        prev.map((app) => (app.id === id ? updatedApp : app))
+      );
+      saveApplicationToFirestore(updatedApp);
+    }
 
     const formattedTimestamp = new Date().toLocaleString('en-GB', {
       day: '2-digit',
@@ -440,7 +478,10 @@ export default function App() {
         annualBudgets={annualBudgets}
         applications={applications}
         user={user}
-        onSaveBudgets={(newBudgets) => setAnnualBudgets(newBudgets)}
+        onSaveBudgets={(newBudgets) => {
+          setAnnualBudgets(newBudgets);
+          saveAnnualBudgetsToFirestore(newBudgets);
+        }}
       />
     </div>
   );

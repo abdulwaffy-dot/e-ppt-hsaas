@@ -1,0 +1,48 @@
+{
+  "entities": {
+    "applications": {
+      "title": "Procurement Applications",
+      "description": "Procurement applications submitted by departments",
+      "properties": {
+        "id": { "type": "string" },
+        "referenceNo": { "type": "string" },
+        "title": { "type": "string" },
+        "year": { "type": "number" },
+        "allocationType": { "type": "string" },
+        "procurementMethod": { "type": "string" },
+        "serviceType": { "type": "string" },
+        "expenditureCategoryCode": { "type": "string" },
+        "expenditureCategoryName": { "type": "string" },
+        "expectedInvitationMonth": { "type": "string" },
+        "expectedInvitationYear": { "type": "number" },
+        "estimatedCost": { "type": "number" },
+        "remarksJustification": { "type": "string" },
+        "department": { "type": "string" },
+        "applicantName": { "type": "string" },
+        "applicantEmail": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "status": { "type": "string" }
+      },
+      "required": ["id", "title", "department", "estimatedCost", "status"]
+    },
+    "annual_budgets": {
+      "title": "Annual Budgets",
+      "description": "HQ Annual budget allocation records",
+      "properties": {
+        "budgets": { "type": "object" }
+      }
+    },
+    "login_logs": {
+      "title": "Login Records",
+      "description": "System login history logs",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "department": { "type": "string" },
+        "loginTimestamp": { "type": "string" }
+      }
+    }
+  }
+}

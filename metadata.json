@@ -1,0 +1,6 @@
+{
+  "name": "Sistem e-PPT HSAAS",
+  "description": "Hospital Sultan Abdul Aziz Shah (HSAAS) UPM procurement management system, HQ approval review workflow, and cost & category analytics dashboard.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

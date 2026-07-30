@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistem e-PPT HSAAS - Canva App Extension</title>
+  <!-- Canva Official Apps SDK -->
+  <script src="https://unpkg.com/@canva/app-sdk@latest/dist/index.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #0f172a;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    .canva-app-container {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .app-iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      flex: 1;
+    }
+    .canva-badge {
+      position: absolute;
+      bottom: 12px;
+      right: 12px;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(8px);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 4px 10px;
+      border-radius: 9999px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      z-index: 50;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .canva-badge-dot {
+      width: 6px;
+      height: 6px;
+      background-color: #4ade80;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #4ade80;
+    }
+  </style>
+</head>
+<body>
+  <div class="canva-app-container">
+    <iframe 
+      id="eppt-frame" 
+      class="app-iframe" 
+      src="https://ais-dev-xacqqo6bd6jbgwfuvequxd-102211131830.asia-southeast1.run.app" 
+      allow="camera; microphone; geolocation; clipboard-write"
+      title="Sistem e-PPT HSAAS"
+      loading="eager"
+    ></iframe>
+
+    <div class="canva-badge">
+      <span class="canva-badge-dot"></span>
+      Sistem e-PPT HSAAS &bull; Canva Enabled
+    </div>
+  </div>
+
+  <script>
+    // Initialize Canva Apps SDK
+    document.addEventListener('DOMContentLoaded', function() {
+      if (window.Canva && window.Canva.App) {
+        try {
+          window.Canva.App.init({
+            onReady: function() {
+              console.log('Sistem e-PPT HSAAS successfully connected to Canva App SDK.');
+            }
+          });
+        } catch (e) {
+          console.warn('Canva SDK initialized in iframe standalone mode.', e);
+        }
+      }
+    });
+
+    // Auto update iframe origin if hosted under different domain
+    const frame = document.getElementById('eppt-frame');
+    if (frame && window.location.origin && window.location.origin !== 'null') {
+      // If deployed in custom server, use local origin fallback
+      if (!window.location.origin.includes('file://')) {
+        frame.src = window.location.origin;
+      }
+    }
+  </script>
+</body>
+</html>

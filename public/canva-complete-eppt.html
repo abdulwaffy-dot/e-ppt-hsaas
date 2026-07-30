@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistem e-PPT HSAAS - Complete Single File System for Canva</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- React & React DOM CDN -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <!-- Babel CDN for inline JSX transformation -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+    }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+
+    // --- MOCK CONSTANTS & DATA ---
+    const UPM_DEPARTMENTS = [
+      'Finance Department : Procurement',
+      'Finance Department',
+      'Human Resource Department',
+      'Information Technology Department',
+      'Engineering and Facilities Department',
+      'Governance, Security and Quality Department',
+      'Social and Community Services Department',
+      'Nursing Management Department',
+      'Family Medicine Department',
+      'Medical Department',
+      'Emergency Medicine Department',
+      'Surgery Department',
+      'Obstetrics and Gynecology Department',
+      'Pediatrics Department',
+      'Radiology Department',
+      'Orthopedic Department',
+      'Rehabilitation Medicine Department',
+      'Psychiatry Department',
+      'Pharmacy Department',
+      'Pathology Department',
+      'Dietetics Department'
+    ];
+
+    const EXPENDITURE_CATEGORIES = [
+      { code: '10000', label: '10000: Emoluments' },
+      { code: '21000', label: '21000: Travel & Living Expenses' },
+      { code: '22000', label: '22000: Transportation of Goods' },
+      { code: '23000', label: '23000: Communication & Utilities' },
+      { code: '24000', label: '24000: Rental' },
+      { code: '25000', label: '25000: Food & Beverages' },
+      { code: '26000', label: '26000: Raw Materials & Spare Parts' },
+      { code: '27000', label: '27000: Other Supplies & Materials' },
+      { code: '28000', label: '28000: Minor Maintenance & Repairs' },
+      { code: '29000', label: '29000: Services' },
+      { code: '50000', label: '50000: Other Expenses' },
+      { code: '300000', label: '300000: Assets' }
+    ];
+
+    const INITIAL_APPLICATIONS = [
+      {
+        id: 'ppt-001',
+        referenceNo: 'PPT-2026-IT-001',
+        title: 'Procurement of High-Performance AI Server Workstations & GPU Node',
+        year: 2026,
+        allocationType: 'Operating 14005',
+        procurementMethod: 'T',
+        serviceType: 'Aset',
+        expenditureCategoryCode: '300000',
+        expenditureCategoryName: 'Assets',
+        expectedInvitationMonth: 'August',
+        expectedInvitationYear: 2026,
+        estimatedCost: 350000,
+        remarksJustification: 'Required to support high-level machine learning research and medical imaging data processing for hospital systems.',
+        department: 'Information Technology Department',
+        applicantName: 'Abdul Waffy',
+        applicantEmail: 'abdulwaffy@upm.edu.my',
+        createdAt: '2026-07-15T09:30:00Z',
+        updatedAt: '2026-07-15T09:30:00Z',
+        status: 'Submitted'
+      },
+      {
+        id: 'ppt-002',
+        referenceNo: 'PPT-2026-RAD-002',
+        title: 'Annual Maintenance Service Contract for MRI & CT Scanner Units',
+        year: 2026,
+        allocationType: 'Operating 14005',
+        procurementMethod: 'SH',
+        serviceType: 'Service',
+        expenditureCategoryCode: '28000',
+        expenditureCategoryName: 'Minor Maintenance & Repairs',
+        expectedInvitationMonth: 'September',
+        expectedInvitationYear: 2026,
+        estimatedCost: 180000,
+        remarksJustification: 'Preventative maintenance and scheduled calibration for Radiology diagnostic equipment to ensure full compliance with health standards.',
+        department: 'Radiology Department',
+        applicantName: 'Dr. Farhan Azman',
+        applicantEmail: 'farhan.azman@upm.edu.my',
+        createdAt: '2026-07-18T11:20:00Z',
+        updatedAt: '2026-07-20T14:15:00Z',
+        status: 'Approved',
+        hqDecision: {
+          status: 'Approved',
+          justification: 'Crucial equipment maintenance required for patient safety and continuous diagnostic capability.',
+          decidedBy: 'Perolehan_hsaas',
+          decidedByEmail: 'perolehan_hsaas@upm.edu.my',
+          decisionDate: '2026-07-20T14:15:00Z'
+        }
+      },
+      {
+        id: 'ppt-003',
+        referenceNo: 'PPT-2026-PHARM-003',
+        title: 'Supply of Specialized Pharmaceutical Products & Onco-Drugs',
+        year: 2026,
+        allocationType: 'Operating 14005',
+        procurementMethod: 'PT',
+        serviceType: 'Bekalan',
+        expenditureCategoryCode: '27000',
+        expenditureCategoryName: 'Other Supplies & Materials',
+        expectedInvitationMonth: 'July',
+        expectedInvitationYear: 2026,
+        estimatedCost: 95000,
+        remarksJustification: 'Critical replenishment of specialized medication stock for hospital pharmacy inventory.',
+        department: 'Pharmacy Department',
+        applicantName: 'Siti Aminah',
+        applicantEmail: 'siti.aminah@upm.edu.my',
+        createdAt: '2026-07-10T08:00:00Z',
+        updatedAt: '2026-07-12T10:00:00Z',
+        status: 'Approved',
+        hqDecision: {
+          status: 'Approved',
+          justification: 'Approved for urgent supply replenishment.',
+          decidedBy: 'Perolehan_hsaas',
+          decidedByEmail: 'perolehan_hsaas@upm.edu.my',
+          decisionDate: '2026-07-12T10:00:00Z'
+        }
+      },
+      {
+        id: 'ppt-004',
+        referenceNo: 'PPT-2026-ENG-004',
+        title: 'Replacement of HVAC Chilled Water Cooling System for Medical Wing',
+        year: 2026,
+        allocationType: 'Operating 14005',
+        procurementMethod: 'T',
+        serviceType: 'Kerja',
+        expenditureCategoryCode: '28000',
+        expenditureCategoryName: 'Minor Maintenance & Repairs',
+        expectedInvitationMonth: 'October',
+        expectedInvitationYear: 2026,
+        estimatedCost: 480000,
+        remarksJustification: 'Overhaul of aging chiller plant to prevent thermal shutdown in operation theaters and intensive care units.',
+        department: 'Engineering and Facilities Department',
+        applicantName: 'Ir. Ahmad Zaki',
+        applicantEmail: 'ahmad.zaki@upm.edu.my',
+        createdAt: '2026-07-22T14:00:00Z',
+        updatedAt: '2026-07-22T14:00:00Z',
+        status: 'Submitted'
+      }
+    ];
+
+    // --- MAIN APP COMPONENT ---
+    function App() {
+      const [applications, setApplications] = useState(() => {
+        const saved = localStorage.getItem('canva_eppt_apps');
+        return saved ? JSON.parse(saved) : INITIAL_APPLICATIONS;
+      });
+
+      // Authentication session state
+      const [isLoggedIn, setIsLoggedIn] = useState(() => {
+        return sessionStorage.getItem('canva_eppt_logged_in') === 'true';
+      });
+      const [showLoginModal, setShowLoginModal] = useState(!isLoggedIn);
+
+      // Login form inputs - Left blank by default to avoid confusion
+      const [loginRole, setLoginRole] = useState('applicant'); // 'applicant' or 'hq'
+      const [loginName, setLoginName] = useState('');
+      const [loginEmail, setLoginEmail] = useState('');
+      const [loginDept, setLoginDept] = useState('Information Technology Department');
+      const [hqIdInput, setHqIdInput] = useState('');
+      const [hqPassInput, setHqPassInput] = useState('');
+      const [loginError, setLoginError] = useState('');
+
+      const [user, setUser] = useState(() => {
+        const savedUser = localStorage.getItem('canva_eppt_user');
+        if (savedUser) {
+          try { return JSON.parse(savedUser); } catch(e){}
+        }
+        return {
+          name: 'Abdul Waffy',
+          email: 'abdulwaffy@upm.edu.my',
+          department: 'Information Technology Department',
+          role: 'applicant', // 'applicant' or 'hq'
+          loginDate: new Date().toLocaleString('en-GB')
+        };
+      });
+
+      const handleLoginSubmit = (e) => {
+        e.preventDefault();
+        setLoginError('');
+
+        if (loginRole === 'hq') {
+          if (hqIdInput.trim() !== 'perolehan_hsaas' || hqPassInput.trim() !== 'Perolehan_2026') {
+            setLoginError('ID atau Kata Laluan HQ tidak sah! Sila guna ID: perolehan_hsaas dan Kata Laluan: Perolehan_2026');
+            return;
+          }
+          const updatedUser = {
+            name: 'Perolehan_hsaas',
+            email: 'perolehan_hsaas@upm.edu.my',
+            department: 'Finance Department : Procurement',
+            role: 'hq',
+            loginDate: new Date().toLocaleString('en-GB')
+          };
+          setUser(updatedUser);
+          localStorage.setItem('canva_eppt_user', JSON.stringify(updatedUser));
+          setIsLoggedIn(true);
+          sessionStorage.setItem('canva_eppt_logged_in', 'true');
+          setShowLoginModal(false);
+          setActiveTab('hq');
+        } else {
+          if (!loginName.trim() || !loginEmail.trim()) {
+            setLoginError('Sila isi Nama dan Emel Rasmi UPM.');
+            return;
+          }
+          const updatedUser = {
+            name: loginName.trim(),
+            email: loginEmail.trim(),
+            department: loginDept,
+            role: 'applicant',
+            loginDate: new Date().toLocaleString('en-GB')
+          };
+          setUser(updatedUser);
+          localStorage.setItem('canva_eppt_user', JSON.stringify(updatedUser));
+          setIsLoggedIn(true);
+          sessionStorage.setItem('canva_eppt_logged_in', 'true');
+          setShowLoginModal(false);
+          setActiveTab('form');
+        }
+      };
+
+      const handleLogout = () => {
+        setIsLoggedIn(false);
+        sessionStorage.removeItem('canva_eppt_logged_in');
+        setShowLoginModal(true);
+      };
+
+      const [activeTab, setActiveTab] = useState('form'); // 'form' | 'department' | 'hq' | 'analytics'
+      const [selectedAppModal, setSelectedAppModal] = useState(null);
+      const [reviewModalApp, setReviewModalApp] = useState(null);
+      const [reviewDecision, setReviewDecision] = useState('Approved');
+      const [reviewJustification, setReviewJustification] = useState('');
+      const [searchQuery, setSearchQuery] = useState('');
+      const [filterStatus, setFilterStatus] = useState('All');
+
+      // Form State
+      const [formData, setFormData] = useState({
+        title: '',
+        year: 2026,
+        allocationType: 'Operating 14005',
+        procurementMethod: 'SH',
+        serviceType: 'Bekalan',
+        expenditureCategoryCode: '27000',
+        expectedInvitationMonth: 'August',
+        expectedInvitationYear: 2026,
+        estimatedCost: '',
+        remarksJustification: '',
+        department: user.department
+      });
+
+      useEffect(() => {
+        localStorage.setItem('canva_eppt_apps', JSON.stringify(applications));
+      }, [applications]);
+
+      useEffect(() => {
+        if (window.lucide) {
+          window.lucide.createIcons();
+        }
+      });
+
+      const pendingHQCount = useMemo(() => {
+        return applications.filter(a => a.status === 'Submitted').length;
+      }, [applications]);
+
+      const totalBudget2026 = 2500000;
+      const approvedCost2026 = useMemo(() => {
+        return applications
+          .filter(a => a.year === 2026 && a.status === 'Approved')
+          .reduce((sum, a) => sum + (Number(a.estimatedCost) || 0), 0);
+      }, [applications]);
+
+      const submittedCost2026 = useMemo(() => {
+        return applications
+          .filter(a => a.year === 2026 && a.status === 'Submitted')
+          .reduce((sum, a) => sum + (Number(a.estimatedCost) || 0), 0);
+      }, [applications]);
+
+      const handleFormSubmit = (e) => {
+        e.preventDefault();
+        if (!formData.title || !formData.estimatedCost) {
+          alert('Sila lengkapkan Tajuk Permohonan dan Anggaran Kos.');
+          return;
+        }
+
+        const catName = EXPENDITURE_CATEGORIES.find(c => c.code === formData.expenditureCategoryCode)?.label || formData.expenditureCategoryCode;
+        const deptPrefix = formData.department.includes('IT') ? 'IT' : formData.department.includes('Radiology') ? 'RAD' : 'GEN';
+        const randomNum = Math.floor(100 + Math.random() * 900);
+        
+        const newApp = {
+          id: 'ppt-' + Date.now(),
+          referenceNo: `PPT-${formData.year}-${deptPrefix}-${randomNum}`,
+          title: formData.title,
+          year: Number(formData.year),
+          allocationType: formData.allocationType,
+          procurementMethod: formData.procurementMethod,
+          serviceType: formData.serviceType,
+          expenditureCategoryCode: formData.expenditureCategoryCode,
+          expenditureCategoryName: catName,
+          expectedInvitationMonth: formData.expectedInvitationMonth,
+          expectedInvitationYear: Number(formData.expectedInvitationYear),
+          estimatedCost: Number(formData.estimatedCost),
+          remarksJustification: formData.remarksJustification,
+          department: formData.department,
+          applicantName: user.name,
+          applicantEmail: user.email,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          status: 'Submitted'
+        };
+
+        setApplications([newApp, ...applications]);
+        alert(`Permohonan e-PPT Berjaya Dihantar!\nNo. Rujukan: ${newApp.referenceNo}`);
+        setFormData({
+          title: '',
+          year: 2026,
+          allocationType: 'Operating 14005',
+          procurementMethod: 'SH',
+          serviceType: 'Bekalan',
+          expenditureCategoryCode: '27000',
+          expectedInvitationMonth: 'August',
+          expectedInvitationYear: 2026,
+          estimatedCost: '',
+          remarksJustification: '',
+          department: user.department
+        });
+        setActiveTab('department');
+      };
+
+      const isAppOwner = (app, u) => {
+        if (!u || !u.email) return false;
+        if (app.applicantEmail) {
+          return app.applicantEmail.trim().toLowerCase() === u.email.trim().toLowerCase();
+        }
+        if (app.applicantName) {
+          return app.applicantName.trim().toLowerCase() === u.name.trim().toLowerCase();
+        }
+        return true;
+      };
+
+      const handleDeleteApp = (id) => {
+        const targetApp = applications.find(a => a.id === id);
+        if (targetApp && !isAppOwner(targetApp, user)) {
+          alert(`Akses Dibataskan: Anda hanya boleh memadam permohonan milik anda sendiri (${user.name}). Permohonan ini milik ${targetApp.applicantName}.`);
+          return;
+        }
+        if (confirm('Adakah anda pasti mahu memadam permohonan perolehan ini?')) {
+          setApplications(applications.filter(a => a.id !== id));
+        }
+      };
+
+      const handleReviewSubmit = () => {
+        if (!reviewModalApp) return;
+        if (!reviewJustification.trim()) {
+          alert('Sila masukkan ulasan/justifikasi keputusan HQ.');
+          return;
+        }
+
+        const updated = applications.map(app => {
+          if (app.id === reviewModalApp.id) {
+            return {
+              ...app,
+              status: reviewDecision,
+              updatedAt: new Date().toISOString(),
+              hqDecision: {
+                status: reviewDecision,
+                justification: reviewJustification,
+                decidedBy: 'Perolehan_hsaas',
+                decidedByEmail: 'perolehan_hsaas@upm.edu.my',
+                decisionDate: new Date().toISOString()
+              }
+            };
+          }
+          return app;
+        });
+
+        setApplications(updated);
+        setReviewModalApp(null);
+        setReviewJustification('');
+      };
+
+      const filteredApps = useMemo(() => {
+        return applications.filter(app => {
+          const matchSearch = app.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                              app.referenceNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                              app.department.toLowerCase().includes(searchQuery.toLowerCase());
+          const matchStatus = filterStatus === 'All' ? true : app.status === filterStatus;
+          return matchSearch && matchStatus;
+        });
+      }, [applications, searchQuery, filterStatus]);
+
+      return (
+        <div className="min-h-screen bg-slate-950 flex flex-col">
+          {/* TOP NAVBAR */}
+          <header className="bg-slate-900/90 backdrop-blur border-b border-slate-800 sticky top-0 z-40">
+            <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-600 via-amber-500 to-emerald-600 flex items-center justify-center font-bold text-white shadow-lg text-lg">
+                  H
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h1 className="font-bold text-base text-white tracking-tight">Sistem e-PPT HSAAS</h1>
+                    {activeTab === 'hq' && (
+                      <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
+                        CANVA READY (HQ ONLY)
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-400">Hospital Sultan Abdul Aziz Shah &bull; Universiti Putra Malaysia</p>
+                </div>
+              </div>
+
+              {/* USER PROFILE & ROLE BADGE */}
+              <div className="flex items-center gap-3">
+                <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl px-3 py-1.5 flex items-center gap-2 text-xs">
+                  <span className="text-slate-400">Peranan:</span>
+                  <span className="text-amber-300 font-bold flex items-center gap-1">
+                    {user.role === 'hq' ? '🛡️ HQ Urus Setia' : '📄 Pemohon Jabatan'}
+                  </span>
+                  <button 
+                    type="button"
+                    onClick={() => { setShowLoginModal(true); setLoginError(''); }} 
+                    className="text-[10px] bg-slate-700 hover:bg-slate-600 text-amber-300 font-semibold px-2 py-0.5 rounded transition ml-1"
+                    title="Tukar Peranan / Log Masuk Semula"
+                  >
+                    Tukar
+                  </button>
+                </div>
+
+                <div className="hidden sm:flex flex-col text-right">
+                  <span className="text-xs font-bold text-slate-200">{user.name}</span>
+                  <span className="text-[10px] text-slate-400">{user.department}</span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-rose-400 hover:text-rose-300 rounded-lg text-xs font-bold border border-slate-700 transition"
+                  title="Log Keluar Sistem"
+                >
+                  Log Keluar
+                </button>
+              </div>
+            </div>
+
+            {/* TAB NAVIGATION */}
+            <div className="max-w-7xl mx-auto px-4 flex items-center gap-2 border-t border-slate-800/60 overflow-x-auto text-xs">
+              <button 
+                onClick={() => setActiveTab('form')}
+                className={`py-3 px-4 font-semibold border-b-2 transition flex items-center gap-2 shrink-0 ${activeTab === 'form' ? 'border-amber-400 text-amber-300 bg-amber-400/5' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
+              >
+                <span>➕ Permohonan Baru</span>
+              </button>
+              <button 
+                onClick={() => setActiveTab('department')}
+                className={`py-3 px-4 font-semibold border-b-2 transition flex items-center gap-2 shrink-0 ${activeTab === 'department' ? 'border-amber-400 text-amber-300 bg-amber-400/5' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
+              >
+                <span>📋 Senarai Permohonan Jabatan</span>
+                <span className="bg-slate-800 text-slate-300 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                  {applications.length}
+                </span>
+              </button>
+
+              {user.role === 'hq' ? (
+                <>
+                  <button 
+                    onClick={() => setActiveTab('hq')}
+                    className={`py-3 px-4 font-semibold border-b-2 transition flex items-center gap-2 shrink-0 ${activeTab === 'hq' ? 'border-amber-400 text-amber-300 bg-amber-400/5' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
+                  >
+                    <span>🛡️ Semakan HQ (Perolehan)</span>
+                    {pendingHQCount > 0 && (
+                      <span className="bg-amber-500 text-slate-950 text-[10px] font-extrabold px-1.5 py-0.5 rounded-full animate-pulse">
+                        {pendingHQCount}
+                      </span>
+                    )}
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab('analytics')}
+                    className={`py-3 px-4 font-semibold border-b-2 transition flex items-center gap-2 shrink-0 ${activeTab === 'analytics' ? 'border-amber-400 text-amber-300 bg-amber-400/5' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
+                  >
+                    <span>📊 Dashboard & Bajet 2026</span>
+                  </button>
+                </>
+              ) : (
+                <button 
+                  onClick={() => {
+                    setLoginRole('hq');
+                    setLoginError('Sila log masuk sebagai HQ Urus Setia Perolehan untuk mengakses modul Semakan Kelulusan HQ dan Analisis Bajet.');
+                    setShowLoginModal(true);
+                  }}
+                  className="py-3 px-4 font-semibold border-b-2 border-transparent text-slate-500 hover:text-amber-400 flex items-center gap-2 shrink-0 opacity-80 cursor-pointer"
+                  title="Akses Terhad: Sila Log Masuk Sebagai HQ Urus Setia Perolehan"
+                >
+                  <span>🔒 Semakan HQ & Analisis Bajet (HQ Only)</span>
+                </button>
+              )}
+            </div>
+          </header>
+
+          {/* MAIN CONTENT AREA */}
+          <main className="max-w-7xl mx-auto w-full p-4 sm:p-6 flex-1 space-y-6">
+
+            {/* SUMMARY CARDS BANNER */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Peruntukan Bajet 2026</p>
+                  <p className="text-xl font-bold text-white mt-1">RM {totalBudget2026.toLocaleString()}</p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">Operating 14005 HSAAS</p>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center font-bold">
+                  💰
+                </div>
+              </div>
+
+              <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Komitmen Diluluskan</p>
+                  <p className="text-xl font-bold text-emerald-400 mt-1">RM {approvedCost2026.toLocaleString()}</p>
+                  <p className="text-[10px] text-emerald-500/80 mt-0.5">{((approvedCost2026/totalBudget2026)*100).toFixed(1)}% Bajet Digunakan</p>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+                  ✅
+                </div>
+              </div>
+
+              <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Permohonan Dalam Semakan</p>
+                  <p className="text-xl font-bold text-amber-400 mt-1">RM {submittedCost2026.toLocaleString()}</p>
+                  <p className="text-[10px] text-amber-500/80 mt-0.5">{pendingHQCount} Permohonan HQ</p>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
+                  ⏳
+                </div>
+              </div>
+
+              <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Baki Perolehan Boleh Guna</p>
+                  <p className="text-xl font-bold text-cyan-400 mt-1">RM {(totalBudget2026 - approvedCost2026).toLocaleString()}</p>
+                  <p className="text-[10px] text-cyan-500/80 mt-0.5">Sedia untuk permohonan baru</p>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold">
+                  🏥
+                </div>
+              </div>
+            </div>
+
+            {/* TAB 1: FORM PERMOHONAN */}
+            {activeTab === 'form' && (
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+                <div className="border-b border-slate-800 pb-4 mb-6">
+                  <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                    <span>📝 Borang Permohonan Perolehan e-PPT HSAAS</span>
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Isikan maklumat perolehan bekalan, perkhidmatan, kerja atau aset mengikut prosedur hospital.
+                  </p>
+                </div>
+
+                <form onSubmit={handleFormSubmit} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-bold text-slate-300 uppercase mb-1">Tajuk Permohonan / Projek *</label>
+                      <input 
+                        type="text" 
+                        required
+                        placeholder="Contoh: Perolehan Sistem Komputer Berprestasi Tinggi untuk Unit Radiologi..."
+                        value={formData.title}
+                        onChange={(e) => setFormData({...formData, title: e.target.value})}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-slate-100 focus:border-amber-400 focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 uppercase mb-1">Jabatan Pemohon</label>
+                      <select 
+                        value={formData.department}
+                        onChange={(e) => setFormData({...formData, department: e.target.value})}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-100 focus:border-amber-400 focus:outline-none"
+                      >
+                        {UPM_DEPARTMENTS.map(d => (
+                          <option key={d} value={d}>{d}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 uppercase mb-1">Tahun Permohonan</label>
+                      <select 
+                        value={formData.year}
+                        onChange={(e) => setFormData({...formData, year: e.target.value})}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-100 focus:border-amber-400 focus:outline-none"
+                      >
+                        {[2024, 2025, 2026, 2027, 2028, 2029, 2030].map(y => (
+                          <option key={y} value={y}>{y}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 uppercase mb-1">Jenis Peruntukan</label>
+                      <input 
+                        type="text" 
+                        readOnly
+                        value={formData.allocationType}
+                        className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-400 font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 uppercase mb-1">Kaedah Perolehan</label>
+                      <select 
+                        value={formData.procurementMethod}
+                        onChange={(e) => setFormData({...formData, procurementMethod: e.target.value})}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-100 focus:border-amber-400 focus:outline-none"
+                      >
+                        <option value="SH">Sebut Harga (SH)</option>
+                        <option value="T">Tender (T)</option>
+                        <option value="PT">Pembelian Terus (PT)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 uppercase mb-1">Jenis Perkhidmatan / Bekalan</label>
+                      <select 
+                        value={formData.serviceType}
+                        onChange={(e) => setFormData({...formData, serviceType: e.target.value})}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-100 focus:border-amber-400 focus:outline-none"
+                      >
+                        <option value="Bekalan">Bekalan (Supply)</option>
+                        <option value="Service">Perkhidmatan (Service)</option>
+                        <option value="Kerja">Kerja (Work)</option>
+                        <option value="Aset">Aset (Asset)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 uppercase mb-1">Kod Kategori Perbelanjaan</label>
+                      <select 
+                        value={formData.expenditureCategoryCode}
+                        onChange={(e) => setFormData({...formData, expenditureCategoryCode: e.target.value})}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-100 focus:border-amber-400 focus:outline-none"
+                      >
+                        {EXPENDITURE_CATEGORIES.map(c => (
+                          <option key={c.code} value={c.code}>{c.label}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 uppercase mb-1">Anggaran Kos Perolehan (RM) *</label>
+                      <input 
+                        type="number" 
+                        required
+                        min="1"
+                        placeholder="Contoh: 150000"
+                        value={formData.estimatedCost}
+                        onChange={(e) => setFormData({...formData, estimatedCost: e.target.value})}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-amber-300 font-bold focus:border-amber-400 focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-300 uppercase mb-1">Bulan Pelawaan</label>
+                        <select 
+                          value={formData.expectedInvitationMonth}
+                          onChange={(e) => setFormData({...formData, expectedInvitationMonth: e.target.value})}
+                          className="w-full bg-slate-950 border border-slate-700 rounded-xl px-2 py-2.5 text-xs text-slate-100 focus:border-amber-400 focus:outline-none"
+                        >
+                          {['January','February','March','April','May','June','July','August','September','October','November','December'].map(m => (
+                            <option key={m} value={m}>{m}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-300 uppercase mb-1">Tahun Pelawaan</label>
+                        <input 
+                          type="number" 
+                          value={formData.expectedInvitationYear}
+                          onChange={(e) => setFormData({...formData, expectedInvitationYear: e.target.value})}
+                          className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-100 focus:border-amber-400 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-bold text-slate-300 uppercase mb-1">Justifikasi & Ulasan Ringkas</label>
+                      <textarea 
+                        rows="3"
+                        placeholder="Terangkan keperluan perolehan ini kepada pihak hospital..."
+                        value={formData.remarksJustification}
+                        onChange={(e) => setFormData({...formData, remarksJustification: e.target.value})}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-slate-100 focus:border-amber-400 focus:outline-none"
+                      ></textarea>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-slate-800 flex justify-end gap-3">
+                    <button 
+                      type="submit" 
+                      className="px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl shadow-lg transition"
+                    >
+                      Hantar Permohonan e-PPT
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* TAB 2: SENARAI PERMOHONAN JABATAN */}
+            {activeTab === 'department' && (
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                  <div>
+                    <h2 className="text-lg font-bold text-white">📋 Senarai Permohonan e-PPT</h2>
+                    <p className="text-xs text-slate-400">Pengurusan dan jejak status permohonan perolehan hospital.</p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <input 
+                      type="text" 
+                      placeholder="Cari rujukan, tajuk..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none"
+                    />
+                    <select 
+                      value={filterStatus}
+                      onChange={(e) => setFilterStatus(e.target.value)}
+                      className="bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none"
+                    >
+                      <option value="All">Semua Status</option>
+                      <option value="Submitted">Dalam Semakan</option>
+                      <option value="Approved">Diluluskan</option>
+                      <option value="Rejected">Ditolak</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs text-slate-300">
+                    <thead className="bg-slate-950/80 text-slate-400 font-bold uppercase text-[10px] tracking-wider border-b border-slate-800">
+                      <tr>
+                        <th className="p-3">No. Rujukan</th>
+                        <th className="p-3">Tajuk Permohonan</th>
+                        <th className="p-3">Jabatan</th>
+                        <th className="p-3">Kos (RM)</th>
+                        <th className="p-3">Kaedah</th>
+                        <th className="p-3">Status</th>
+                        <th className="p-3 text-right">Tindakan</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/60">
+                      {filteredApps.length === 0 ? (
+                        <tr>
+                          <td colSpan="7" className="p-6 text-center text-slate-500">
+                            Tiada rekod permohonan dijumpai.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredApps.map(app => {
+                          const isOwner = isAppOwner(app, user);
+                          return (
+                            <tr key={app.id} className="hover:bg-slate-800/40 transition">
+                              <td className="p-3 font-mono font-bold text-amber-300">{app.referenceNo}</td>
+                              <td className="p-3 font-semibold text-white max-w-xs">
+                                <div className="truncate">{app.title}</div>
+                                <div className="text-[10px] text-slate-400 font-normal mt-0.5">
+                                  Pemohon: <span className={isOwner ? "text-amber-300 font-bold" : "text-slate-300"}>{app.applicantName || 'Pemohon'} {isOwner ? '(Anda)' : ''}</span>
+                                </div>
+                              </td>
+                              <td className="p-3 text-slate-400">{app.department}</td>
+                              <td className="p-3 font-bold text-emerald-400">RM {Number(app.estimatedCost).toLocaleString()}</td>
+                              <td className="p-3">
+                                <span className="bg-slate-800 text-slate-300 px-2 py-0.5 rounded text-[10px] font-mono">
+                                  {app.procurementMethod}
+                                </span>
+                              </td>
+                              <td className="p-3">
+                                {app.status === 'Submitted' && <span className="bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full text-[10px] font-bold">Semakan HQ</span>}
+                                {app.status === 'Approved' && <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full text-[10px] font-bold">Diluluskan</span>}
+                                {app.status === 'Rejected' && <span className="bg-rose-500/20 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded-full text-[10px] font-bold">Ditolak</span>}
+                              </td>
+                              <td className="p-3 text-right">
+                                <div className="flex items-center justify-end gap-1">
+                                  <button 
+                                    onClick={() => setSelectedAppModal(app)}
+                                    className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-[11px] font-medium transition"
+                                  >
+                                    Butiran
+                                  </button>
+                                  {isOwner ? (
+                                    <button 
+                                      onClick={() => handleDeleteApp(app.id)}
+                                      className="px-2 py-1 bg-rose-900/40 hover:bg-rose-800 text-rose-300 rounded-lg text-[11px] font-medium transition border border-rose-800/50"
+                                      title="Padam Permohonan Anda"
+                                    >
+                                      Padam
+                                    </button>
+                                  ) : (
+                                    <span className="text-[10px] text-slate-500 bg-slate-950 px-2 py-1 rounded border border-slate-800" title={`Milik ${app.applicantName}`}>
+                                      🔒 Hak Milik Terhad
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 3: SEMAKAN HQ */}
+            {activeTab === 'hq' && (
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+                <div className="border-b border-slate-800 pb-4">
+                  <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                    <span>🛡️ Panel Kelulusan Urus Setia HQ (Perolehan HSAAS)</span>
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Kelulusan permohonan perolehan hospital dan kawalan peruntukan Operating 14005.
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  {applications.filter(a => a.status === 'Submitted').length === 0 ? (
+                    <div className="bg-slate-950/60 rounded-xl p-8 text-center text-slate-500 text-xs">
+                      🎉 Tiada permohonan baru menanti kelulusan HQ buat masa ini.
+                    </div>
+                  ) : (
+                    applications.filter(a => a.status === 'Submitted').map(app => (
+                      <div key={app.id} className="bg-slate-950/80 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-slate-700 transition">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-xs font-bold text-amber-300">{app.referenceNo}</span>
+                            <span className="text-[10px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded font-mono">{app.serviceType}</span>
+                          </div>
+                          <h4 className="font-bold text-sm text-white mt-1">{app.title}</h4>
+                          <p className="text-xs text-slate-400 mt-0.5">{app.department} &bull; Pemohon: {app.applicantName}</p>
+                          <p className="text-xs text-slate-300 italic mt-2 bg-slate-900 p-2 rounded border border-slate-800">
+                            "{app.remarksJustification || 'Tiada catat/justifikasi khusus'}"
+                          </p>
+                        </div>
+
+                        <div className="flex flex-col md:items-end gap-2 shrink-0 border-t md:border-t-0 pt-3 md:pt-0 border-slate-800">
+                          <span className="text-lg font-bold text-emerald-400">RM {Number(app.estimatedCost).toLocaleString()}</span>
+                          <button 
+                            onClick={() => {
+                              setReviewModalApp(app);
+                              setReviewDecision('Approved');
+                              setReviewJustification('');
+                            }}
+                            className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl transition shadow"
+                          >
+                            Semak & Buat Keputusan HQ
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* TAB 4: ANALYTICS & DASHBOARD */}
+            {activeTab === 'analytics' && (
+              <div className="space-y-6">
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+                  <h2 className="text-lg font-bold text-white">📊 Penggunaan Bajet & Analisis Perolehan 2026</h2>
+                  
+                  {/* Progress Bar */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs font-bold">
+                      <span className="text-slate-300">Penggunaan Bajet HSAAS (RM {approvedCost2026.toLocaleString()} / RM {totalBudget2026.toLocaleString()})</span>
+                      <span className="text-emerald-400">{((approvedCost2026/totalBudget2026)*100).toFixed(1)}%</span>
+                    </div>
+                    <div className="w-full bg-slate-950 rounded-full h-4 overflow-hidden border border-slate-800">
+                      <div 
+                        className="bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 h-full transition-all duration-500"
+                        style={{ width: `${Math.min(100, (approvedCost2026/totalBudget2026)*100)}%` }}
+                      ></div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+                    <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800">
+                      <h4 className="text-xs font-bold text-slate-300 uppercase mb-2">Ringkasan Mengikut Kaedah</h4>
+                      <ul className="space-y-2 text-xs">
+                        <li className="flex justify-between">
+                          <span className="text-slate-400">Sebut Harga (SH):</span>
+                          <span className="font-bold text-white">{applications.filter(a => a.procurementMethod==='SH').length} Rekod</span>
+                        </li>
+                        <li className="flex justify-between">
+                          <span className="text-slate-400">Tender Awam (T):</span>
+                          <span className="font-bold text-white">{applications.filter(a => a.procurementMethod==='T').length} Rekod</span>
+                        </li>
+                        <li className="flex justify-between">
+                          <span className="text-slate-400">Pembelian Terus (PT):</span>
+                          <span className="font-bold text-white">{applications.filter(a => a.procurementMethod==='PT').length} Rekod</span>
+                        </li>
+                      </ul>
+                    </div>
+
+                    <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800">
+                      <h4 className="text-xs font-bold text-slate-300 uppercase mb-2">Status Permohonan Overall</h4>
+                      <ul className="space-y-2 text-xs">
+                        <li className="flex justify-between">
+                          <span className="text-emerald-400 font-semibold">Diluluskan:</span>
+                          <span className="font-bold text-emerald-400">{applications.filter(a => a.status==='Approved').length} permohonan</span>
+                        </li>
+                        <li className="flex justify-between">
+                          <span className="text-amber-400 font-semibold">Dalam Semakan HQ:</span>
+                          <span className="font-bold text-amber-400">{applications.filter(a => a.status==='Submitted').length} permohonan</span>
+                        </li>
+                        <li className="flex justify-between">
+                          <span className="text-rose-400 font-semibold">Ditolak:</span>
+                          <span className="font-bold text-rose-400">{applications.filter(a => a.status==='Rejected').length} permohonan</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+          </main>
+
+          {/* DETAIL MODAL */}
+          {selectedAppModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+              <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in">
+                <div className="bg-slate-800 p-4 flex items-center justify-between border-b border-slate-700">
+                  <h3 className="font-bold text-sm text-white">Butiran Permohonan e-PPT</h3>
+                  <button onClick={() => setSelectedAppModal(null)} className="text-slate-400 hover:text-white font-bold text-lg">✕</button>
+                </div>
+                <div className="p-6 space-y-4 text-xs">
+                  <div>
+                    <span className="text-slate-400 uppercase text-[10px] font-bold">No. Rujukan</span>
+                    <p className="font-mono font-bold text-amber-300 text-sm">{selectedAppModal.referenceNo}</p>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 uppercase text-[10px] font-bold">Tajuk</span>
+                    <p className="font-bold text-white text-sm">{selectedAppModal.title}</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <span className="text-slate-400 uppercase text-[10px] font-bold">Jabatan</span>
+                      <p className="text-slate-200">{selectedAppModal.department}</p>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 uppercase text-[10px] font-bold">Pemohon</span>
+                      <p className="text-slate-200">{selectedAppModal.applicantName}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <span className="text-slate-400 uppercase text-[10px] font-bold">Anggaran Kos</span>
+                      <p className="font-bold text-emerald-400 text-sm">RM {Number(selectedAppModal.estimatedCost).toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 uppercase text-[10px] font-bold">Kaedah / Jenis</span>
+                      <p className="text-slate-200">{selectedAppModal.procurementMethod} &bull; {selectedAppModal.serviceType}</p>
+                    </div>
+                  </div>
+                  {selectedAppModal.hqDecision && (
+                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1">
+                      <span className="text-amber-400 font-bold uppercase text-[10px]">Keputusan Urus Setia HQ</span>
+                      <p className="text-white font-semibold">Status: {selectedAppModal.hqDecision.status}</p>
+                      <p className="text-slate-300 italic">"{selectedAppModal.hqDecision.justification}"</p>
+                    </div>
+                  )}
+                </div>
+                <div className="bg-slate-800 p-4 flex items-center justify-between border-t border-slate-700">
+                  {isAppOwner(selectedAppModal, user) ? (
+                    <button 
+                      onClick={() => {
+                        handleDeleteApp(selectedAppModal.id);
+                        setSelectedAppModal(null);
+                      }} 
+                      className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow transition"
+                    >
+                      Padam Permohonan Ini
+                    </button>
+                  ) : (
+                    <div className="text-[11px] text-amber-300 font-medium flex items-center gap-1">
+                      🔒 Hak Milik: <strong>{selectedAppModal.applicantName}</strong> (Pengeditan Terhad)
+                    </div>
+                  )}
+                  <button onClick={() => setSelectedAppModal(null)} className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs rounded-xl ml-auto">
+                    Tutup
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* HQ DECISION MODAL */}
+          {reviewModalApp && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+              <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in">
+                <div className="bg-gradient-to-r from-amber-600 to-slate-900 p-4 flex items-center justify-between text-white">
+                  <h3 className="font-bold text-sm">Keputusan Urus Setia HQ</h3>
+                  <button onClick={() => setReviewModalApp(null)} className="text-white/80 hover:text-white font-bold text-lg">✕</button>
+                </div>
+                <div className="p-6 space-y-4 text-xs">
+                  <p className="font-mono text-amber-300 font-bold">{reviewModalApp.referenceNo}</p>
+                  <p className="font-bold text-white text-sm">{reviewModalApp.title}</p>
+                  <p className="text-slate-400">Jumlah: <span className="text-emerald-400 font-bold">RM {Number(reviewModalApp.estimatedCost).toLocaleString()}</span></p>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 uppercase mb-1">Keputusan HQ</label>
+                    <select 
+                      value={reviewDecision}
+                      onChange={(e) => setReviewDecision(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                    >
+                      <option value="Approved">Luluskan Permohonan</option>
+                      <option value="Rejected">Tolak Permohonan</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 uppercase mb-1">Catatan / Justifikasi HQ *</label>
+                    <textarea 
+                      rows="3"
+                      placeholder="Masukkan ulasan keputusan kelulusan..."
+                      value={reviewJustification}
+                      onChange={(e) => setReviewJustification(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-white focus:outline-none"
+                    ></textarea>
+                  </div>
+                </div>
+                <div className="bg-slate-800 p-4 flex justify-end gap-2 border-t border-slate-700">
+                  <button onClick={() => setReviewModalApp(null)} className="px-4 py-2 bg-slate-700 text-white text-xs font-bold rounded-xl">
+                    Batal
+                  </button>
+                  <button onClick={handleReviewSubmit} className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow">
+                    Simpan Keputusan HQ
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* FORCED LOGIN MODAL ON LOAD */}
+          {(showLoginModal || !isLoggedIn) && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-md p-4">
+              <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl p-6 space-y-5 animate-in fade-in">
+                <div className="text-center space-y-2">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-400 text-slate-950 flex items-center justify-center font-black text-xl mx-auto shadow-lg">
+                    UPM
+                  </div>
+                  <h2 className="text-lg font-bold text-white">Sistem e-PPT HSAAS</h2>
+                  <p className="text-xs text-slate-400">Hospital Sultan Abdul Aziz Shah Procurement System</p>
+                  <span className="inline-block bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] px-3 py-1 rounded-full font-medium">
+                    Sila Log Masuk Terlebih Dahulu
+                  </span>
+                </div>
+
+                {/* Role Selection Tabs */}
+                <div className="grid grid-cols-2 gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => { setLoginRole('applicant'); setLoginError(''); }}
+                    className={`py-2 text-xs font-bold rounded-lg transition ${loginRole === 'applicant' ? 'bg-red-800 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+                  >
+                    Pemohon Jabatan
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setLoginRole('hq'); setLoginError(''); }}
+                    className={`py-2 text-xs font-bold rounded-lg transition ${loginRole === 'hq' ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'}`}
+                  >
+                    HQ Urus Setia HSAAS
+                  </button>
+                </div>
+
+                {loginError && (
+                  <div className="bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs p-3 rounded-xl">
+                    {loginError}
+                  </div>
+                )}
+
+                {loginRole === 'applicant' ? (
+                  <form onSubmit={handleLoginSubmit} className="space-y-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1">Nama Pemohon *</label>
+                      <input
+                        type="text"
+                        required
+                        value={loginName}
+                        onChange={(e) => setLoginName(e.target.value)}
+                        placeholder="Masukkan Nama Penuh / Enter Official Name"
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1">Emel Rasmi UPM *</label>
+                      <input
+                        type="email"
+                        required
+                        value={loginEmail}
+                        onChange={(e) => setLoginEmail(e.target.value)}
+                        placeholder="contoh: nama@upm.edu.my"
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400 font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1">Jabatan / Unit HSAAS *</label>
+                      <select
+                        value={loginDept}
+                        onChange={(e) => setLoginDept(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400"
+                      >
+                        {UPM_DEPARTMENTS.map(d => (
+                          <option key={d} value={d}>{d}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <button
+                      type="submit"
+                      className="w-full py-3 bg-red-800 hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-lg transition mt-2"
+                    >
+                      Log Masuk Pemohon Jabatan
+                    </button>
+                  </form>
+                ) : (
+                  <form onSubmit={handleLoginSubmit} className="space-y-3">
+                    <div className="bg-amber-500/10 border border-amber-500/20 p-2.5 rounded-xl text-[11px] text-amber-300">
+                      <strong>Keahlian HQ Urus Setia Perolehan:</strong><br />
+                      ID: <code className="bg-slate-950 px-1 py-0.5 rounded text-white">perolehan_hsaas</code> | Kata Laluan: <code className="bg-slate-950 px-1 py-0.5 rounded text-white">Perolehan_2026</code>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1">HQ Reviewer ID *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="perolehan_hsaas"
+                        value={hqIdInput}
+                        onChange={(e) => setHqIdInput(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400 font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1">Kata Laluan HQ *</label>
+                      <input
+                        type="password"
+                        required
+                        placeholder="••••••••"
+                        value={hqPassInput}
+                        onChange={(e) => setHqPassInput(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400 font-mono"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg transition mt-2"
+                    >
+                      Log Masuk HQ Perolehan HSAAS
+                    </button>
+                  </form>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* FOOTER */}
+          <footer className="bg-slate-900 border-t border-slate-800 p-4 text-center text-xs text-slate-500">
+            Sistem e-PPT HSAAS &bull; Hospital Sultan Abdul Aziz Shah &bull; Universiti Putra Malaysia &bull; Ready for Canva Integration
+          </footer>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

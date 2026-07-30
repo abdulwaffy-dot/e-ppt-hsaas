@@ -25,7 +25,6 @@ import { HQBudgetModal } from './components/HQBudgetModal';
 import { DepartmentApplicationsList } from './components/DepartmentApplicationsList';
 import { HQReviewPanel } from './components/HQReviewPanel';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
-import { CanvaPublishModal } from './components/CanvaPublishModal';
 
 const STORAGE_KEY_USER = 'upm_eppt_user_profile';
 const STORAGE_KEY_APPS = 'upm_eppt_applications';
@@ -122,7 +121,6 @@ export default function App() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isActionModalOpen, setIsActionModalOpen] = useState(false);
   const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
-  const [isCanvaModalOpen, setIsCanvaModalOpen] = useState(false);
 
   // Selected item states
   const [editingApplication, setEditingApplication] = useState<ProcurementApplication | null>(null);
@@ -322,7 +320,6 @@ export default function App() {
         user={user}
         onOpenVerification={() => setIsVerificationModalOpen(true)}
         onOpenLoginHistory={() => setIsLoginHistoryOpen(true)}
-        onOpenCanvaModal={() => setIsCanvaModalOpen(true)}
         onLogout={handleLogout}
         pendingHQCount={pendingHQCount}
       />
@@ -444,11 +441,6 @@ export default function App() {
         applications={applications}
         user={user}
         onSaveBudgets={(newBudgets) => setAnnualBudgets(newBudgets)}
-      />
-
-      <CanvaPublishModal
-        isOpen={isCanvaModalOpen}
-        onClose={() => setIsCanvaModalOpen(false)}
       />
     </div>
   );

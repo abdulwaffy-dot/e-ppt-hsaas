@@ -19,7 +19,6 @@ interface NavbarProps {
   user: UserProfile;
   onOpenVerification: () => void;
   onOpenLoginHistory: () => void;
-  onOpenCanvaModal?: () => void;
   onLogout: () => void;
   pendingHQCount: number;
 }
@@ -30,7 +29,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   user,
   onOpenVerification,
   onOpenLoginHistory,
-  onOpenCanvaModal,
   onLogout,
   pendingHQCount,
 }) => {
@@ -115,18 +113,6 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* User Quick Actions & Identity */}
           <div className="flex items-center gap-2 shrink-0">
-            {onOpenCanvaModal && currentTab === 'hq' && (
-              <button
-                onClick={onOpenCanvaModal}
-                className="hidden sm:flex items-center gap-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition"
-                title="Live Canva View & Embedding (Websites, Presentations, Docs)"
-              >
-                <Share2 className="w-3.5 h-3.5 text-amber-300" />
-                <span className="hidden lg:inline">Live Canva View</span>
-                <span className="lg:hidden">Canva View</span>
-              </button>
-            )}
-
             <button
               onClick={onOpenVerification}
               className="hidden lg:flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg border border-slate-700 text-xs font-medium transition"

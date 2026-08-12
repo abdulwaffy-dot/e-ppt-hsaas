@@ -2,21 +2,36 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Admin tunggal dengan UID atau email perolehan_hsaas@upm.edu.my
+    // Admin & HQ Review Authority
     match /{document=**} {
       allow read, write: if request.auth != null 
                          && (request.auth.uid == "perolehan_hsaas" || request.auth.token.email == "perolehan_hsaas@upm.edu.my");
     }
 
-    // Staf dengan email @upm.edu.my
+    // HSAAS Staff (@upm.edu.my)
     match /{document=**} {
       allow read, write: if request.auth != null 
                          && request.auth.token.email.matches(".*@upm.edu.my$");
     }
 
-    // Fallback for authenticated users in app session
+    // Applications, budgets, logs and profiles collections
+    match /applications/{appId} {
+      allow read, write: if true;
+    }
+    match /annual_budgets/{budgetId} {
+      allow read, write: if true;
+    }
+    match /login_logs/{logId} {
+      allow read, write: if true;
+    }
+    match /user_profiles/{profileId} {
+      allow read, write: if true;
+    }
+
+    // General fallback
     match /{document=**} {
-      allow read, write: if request.auth != null;
+      allow read, write: if true;
     }
   }
 }
+

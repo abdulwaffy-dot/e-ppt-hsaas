@@ -370,39 +370,52 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
           </div>
         </div>
 
-        {/* Footer Actions */}
-        <div className="bg-slate-50 border-t border-slate-200 p-4 px-6 flex flex-wrap items-center justify-between gap-3 shrink-0">
-          <div className="text-[11px] text-slate-500">
-            Applicant: <strong className="text-slate-800">{user.name}</strong> ({user.email})
+        {/* Footer Actions & Guidance */}
+        <div className="bg-slate-50 border-t border-slate-200 p-4 px-6 space-y-3 shrink-0">
+          <div className="flex flex-wrap items-center justify-between text-[11px] text-slate-500 gap-2">
+            <div>
+              Pemohon: <strong className="text-slate-800">{user.name}</strong> ({user.email}) • Jabatan:{' '}
+              <strong className="text-slate-800">{selectedDepartment || user.department}</strong>
+            </div>
+            <div className="text-[10px] text-slate-500 bg-amber-50 text-amber-900 px-2 py-0.5 rounded border border-amber-200">
+              💡 Tekan <strong>Submit to HQ</strong> untuk membolehkan pihak HQ membuat semakan & kelulusan.
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-slate-200/60">
             <button
               type="button"
               onClick={onClose}
               className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg text-xs font-medium hover:bg-slate-100 transition"
             >
-              Cancel
+              Batal (Cancel)
             </button>
 
-            <button
-              type="button"
-              onClick={() => handleSubmit('Draft')}
-              className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg text-xs font-semibold transition flex items-center gap-1.5"
-            >
-              <Save className="w-3.5 h-3.5" />
-              Save Draft
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  handleSubmit('Draft');
+                  alert('Draf Permohonan Berjaya Disimpan. Draf ini berada di portal jabatan anda dan belum dihantar ke HQ. Sila tekan butang "Hantar ke HQ" apabila sedia.');
+                }}
+                className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg text-xs font-semibold transition flex items-center gap-1.5"
+                title="Simpan sebagai draf jabatan (belum dihantar ke HQ)"
+              >
+                <Save className="w-3.5 h-3.5" />
+                Simpan Draf (Save Draft)
+              </button>
 
-            <button
-              type="button"
-              disabled={!title.trim() || !estimatedCost}
-              onClick={() => handleSubmit('Submitted')}
-              className="px-5 py-2 bg-red-800 hover:bg-red-900 disabled:opacity-50 text-white rounded-lg text-xs font-semibold shadow transition flex items-center gap-1.5"
-            >
-              <CheckCircle className="w-3.5 h-3.5 text-amber-300" />
-              Submit to HQ
-            </button>
+              <button
+                type="button"
+                disabled={!title.trim() || !estimatedCost}
+                onClick={() => handleSubmit('Submitted')}
+                className="px-5 py-2 bg-red-800 hover:bg-red-900 disabled:opacity-50 text-white rounded-lg text-xs font-bold shadow-md transition flex items-center gap-2 ring-2 ring-red-800/30"
+                title="Hantar permohonan secara rasmi ke HQ Review Panel"
+              >
+                <CheckCircle className="w-4 h-4 text-amber-300" />
+                <span>Hantar ke HQ (Submit to HQ)</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>

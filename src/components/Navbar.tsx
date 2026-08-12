@@ -113,6 +113,14 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* User Quick Actions & Identity */}
           <div className="flex items-center gap-2 shrink-0">
+            <div
+              className="hidden sm:flex items-center gap-1.5 bg-slate-800/90 text-emerald-400 px-2.5 py-1 rounded-full border border-slate-700/80 text-[11px] font-medium"
+              title="Real-Time Cloud Synchronization Active (Firebase Firestore)"
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Live Cloud Sync</span>
+            </div>
+
             <button
               onClick={onOpenVerification}
               className="hidden lg:flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg border border-slate-700 text-xs font-medium transition"

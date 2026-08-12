@@ -428,13 +428,18 @@
 
       const filteredApps = useMemo(() => {
         return applications.filter(app => {
+          // Privacy isolation: applicants only see their own applications matching official name and email
+          if (user && user.role !== 'hq') {
+            const matchesOwner = isAppOwner(app, user);
+            if (!matchesOwner) return false;
+          }
           const matchSearch = app.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                               app.referenceNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
                               app.department.toLowerCase().includes(searchQuery.toLowerCase());
           const matchStatus = filterStatus === 'All' ? true : app.status === filterStatus;
           return matchSearch && matchStatus;
         });
-      }, [applications, searchQuery, filterStatus]);
+      }, [applications, searchQuery, filterStatus, user]);
 
       return (
         <div className="min-h-screen bg-slate-950 flex flex-col">

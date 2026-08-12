@@ -23,6 +23,36 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
 }) => {
   if (!isOpen || !application) return null;
 
+  const isOwner = user && application && (
+    application.applicantName.trim().toLowerCase() === user.name.trim().toLowerCase() &&
+    (!application.applicantEmail || application.applicantEmail.trim().toLowerCase() === user.email.trim().toLowerCase())
+  );
+
+  // If user is an applicant and NOT the owner of this application, block access completely
+  if (user && user.role !== 'hq' && !isOwner) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4">
+        <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-md w-full p-6 text-center space-y-4 animate-in fade-in duration-200">
+          <div className="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto">
+            <Lock className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-slate-900">Akses Ditolak: Kerahsiaan Pemohon</h3>
+            <p className="text-xs text-slate-600 leading-relaxed mt-2">
+              Maklumat permohonan PPT ini sulit dan tidak boleh dilihat oleh pemohon lain. Hanya pemohon yang memasukkan <strong>Nama Rasmi</strong> dan <strong>Emel Rasmi Institusi</strong> yang sepadan dibenarkan mengaksesnya.
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition shadow"
+          >
+            Tutup
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const formattedCost = new Intl.NumberFormat('en-MY', {
     style: 'currency',
     currency: 'MYR',

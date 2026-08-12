@@ -9,7 +9,7 @@ import {
   ServiceType,
   AllocationType,
 } from '../types';
-import { X, FilePlus, DollarSign, Calendar, FileText, CheckCircle, Save } from 'lucide-react';
+import { X, FilePlus, DollarSign, Calendar, FileText, CheckCircle, Save, Lock, ShieldCheck, User, Mail, Building2 } from 'lucide-react';
 
 interface ApplicationFormModalProps {
   isOpen: boolean;
@@ -57,6 +57,18 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
 
   useEffect(() => {
     if (editingApplication) {
+      // Ownership check for editing
+      const isOwner = user.role === 'hq' || (
+        editingApplication.applicantName.trim().toLowerCase() === user.name.trim().toLowerCase() &&
+        (!editingApplication.applicantEmail || editingApplication.applicantEmail.trim().toLowerCase() === user.email.trim().toLowerCase())
+      );
+
+      if (!isOwner) {
+        alert(`Akses Ditolak: Anda tidak mempunyai hak untuk mengedit permohonan milik pemohon lain (${editingApplication.applicantName}).`);
+        onClose();
+        return;
+      }
+
       setTitle(editingApplication.title);
       setSelectedDepartment(editingApplication.department || user.department);
       setYear(editingApplication.year);
@@ -80,7 +92,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
       setEstimatedCost('');
       setRemarksJustification('');
     }
-  }, [editingApplication, isOpen, user.department]);
+  }, [editingApplication, isOpen, user.department, user.name, user.email, user.role]);
 
   if (!isOpen) return null;
 
@@ -128,7 +140,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
 
     onSubmitApplication(application);
     if (status === 'Submitted') {
-      alert(`Success! Application ${refNo} has been submitted to HQ Review Panel for review and approval.`);
+      alert(`Berjaya! Permohonan ${refNo} telah dihantar ke Panel Semakan HQ untuk semakan dan kelulusan.`);
     }
     onClose();
   };
@@ -153,7 +165,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
                 03. Procurement Application Information (PPT)
               </h2>
               <p className="text-xs text-red-200">
-                Department: <strong className="text-white">{user.department}</strong>
+                {editingApplication ? `Kemaskini Permohonan: ${editingApplication.referenceNo}` : 'Borang Permohonan Perolehan Baharu'}
               </p>
             </div>
           </div>
@@ -167,9 +179,39 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
 
         {/* Form Body */}
         <div className="p-6 space-y-5 max-h-[78vh] overflow-y-auto">
+          {/* Verified Applicant Identity Badge */}
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-3.5 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                Maklumat Pengesahan Pemohon (Terkunci ke Sesi Log Masuk Rasmi)
+              </span>
+              <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
+                <Lock className="w-3 h-3" /> Disahkan & Dilindungi
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-1">
+              <div className="bg-white p-2.5 rounded border border-slate-200 flex items-center gap-2">
+                <User className="w-4 h-4 text-slate-400 shrink-0" />
+                <div>
+                  <span className="text-[10px] text-slate-400 block font-semibold">Nama Rasmi Pemohon</span>
+                  <span className="font-bold text-slate-900">{user.name}</span>
+                </div>
+              </div>
+              <div className="bg-white p-2.5 rounded border border-slate-200 flex items-center gap-2">
+                <Mail className="w-4 h-4 text-slate-400 shrink-0" />
+                <div>
+                  <span className="text-[10px] text-slate-400 block font-semibold">Emel Rasmi Institusi</span>
+                  <span className="font-bold text-slate-900 font-mono">{user.email}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Submitting Department */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1">
+              <Building2 className="w-3.5 h-3.5 text-slate-500" />
               Submitting Department / Unit <span className="text-red-600">*</span>
             </label>
             <select
@@ -374,7 +416,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
         <div className="bg-slate-50 border-t border-slate-200 p-4 px-6 space-y-3 shrink-0">
           <div className="flex flex-wrap items-center justify-between text-[11px] text-slate-500 gap-2">
             <div>
-              Pemohon: <strong className="text-slate-800">{user.name}</strong> ({user.email}) • Jabatan:{' '}
+              Pemohon Rasmi: <strong className="text-slate-800">{user.name}</strong> ({user.email}) • Jabatan:{' '}
               <strong className="text-slate-800">{selectedDepartment || user.department}</strong>
             </div>
             <div className="text-[10px] text-slate-500 bg-amber-50 text-amber-900 px-2 py-0.5 rounded border border-amber-200">

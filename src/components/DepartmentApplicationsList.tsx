@@ -38,12 +38,12 @@ export const DepartmentApplicationsList: React.FC<DepartmentApplicationsListProp
   onSubmitDraft,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [deptFilterState, setDeptFilterState] = useState<string>('MY_DEPT');
+  const [deptFilterState, setDeptFilterState] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [yearFilter, setYearFilter] = useState<string>('ALL');
 
   const filteredApps = applications.filter((app) => {
-    // Department filtering: MY_DEPT shows user.department, ALL shows all, or specific department
+    // Department filtering: ALL shows all, MY_DEPT shows user.department, or specific department
     const matchesDept =
       deptFilterState === 'ALL'
         ? true

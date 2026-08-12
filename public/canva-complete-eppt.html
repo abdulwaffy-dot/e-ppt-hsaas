@@ -244,13 +244,17 @@
           setActiveTab('hq');
         } else {
           if (!loginName.trim() || !loginEmail.trim()) {
-            setLoginError('Sila isi Nama dan Emel Rasmi UPM.');
+            setLoginError('Sila isi Nama dan Emel Rasmi UPM (@upm.edu.my).');
             return;
+          }
+          let cleanEmail = loginEmail.trim();
+          if (!cleanEmail.includes('@')) {
+            cleanEmail = `${cleanEmail}@upm.edu.my`;
           }
           const updatedUser = {
             name: loginName.trim(),
-            email: loginEmail.trim(),
-            department: loginDept,
+            email: cleanEmail,
+            department: 'Hospital Sultan Abdul Aziz Shah',
             role: 'applicant',
             loginDate: new Date().toLocaleString('en-GB')
           };
@@ -1155,18 +1159,6 @@
                         placeholder="contoh: nama@upm.edu.my"
                         className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400 font-mono"
                       />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1">Jabatan / Unit HSAAS *</label>
-                      <select
-                        value={loginDept}
-                        onChange={(e) => setLoginDept(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400"
-                      >
-                        {UPM_DEPARTMENTS.map(d => (
-                          <option key={d} value={d}>{d}</option>
-                        ))}
-                      </select>
                     </div>
                     <button
                       type="submit"

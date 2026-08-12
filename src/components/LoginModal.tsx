@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { UPM_DEPARTMENTS, UserProfile, LoginRecord } from '../types';
+import { UserProfile, LoginRecord } from '../types';
 import { authenticateWithFirebase, saveUserProfileToFirestore } from '../lib/firebaseService';
 import {
-  Building2,
   Mail,
   User,
   ShieldCheck,
@@ -12,7 +11,6 @@ import {
   Lock,
   Eye,
   EyeOff,
-  CheckCircle2,
 } from 'lucide-react';
 
 interface LoginModalProps {
@@ -29,12 +27,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onLoginSuccess, 
   const [hqPassword, setHqPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  // Department Applicant fields - Left blank by default to avoid confusion
+  // Department Applicant fields - Simplified to Official Name & Official Institutional Email
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [department, setDepartment] = useState(
-    initialUser?.department || 'Information Technology Department'
-  );
   
   const [error, setError] = useState<string | null>(null);
 
@@ -46,7 +41,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onLoginSuccess, 
     if (newRole === 'hq') {
       setName('Perolehan_hsaas');
       setEmail('perolehan_hsaas@upm.edu.my');
-      setDepartment('Finance Department');
     }
   };
 
@@ -121,17 +115,17 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onLoginSuccess, 
       return;
     }
 
+    if (!trimmedEmail) {
+      setError('Official Institutional Email is required.');
+      return;
+    }
+
     if (!trimmedEmail.includes('@')) {
       trimmedEmail = `${trimmedEmail}@upm.edu.my`;
     }
 
     if (!trimmedEmail.endsWith('@upm.edu.my')) {
       setError('Official email address must use the @upm.edu.my domain.');
-      return;
-    }
-
-    if (!department) {
-      setError('Please select your official Department / Section / Unit.');
       return;
     }
 
@@ -148,10 +142,12 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onLoginSuccess, 
       second: '2-digit',
     });
 
+    const userDept = initialUser?.department || 'Hospital Sultan Abdul Aziz Shah';
+
     const updatedUser: UserProfile = {
       name: trimmedName,
       email: trimmedEmail,
-      department,
+      department: userDept,
       loginDate: formattedTimestamp,
       updateDate: formattedTimestamp,
       role: 'applicant',
@@ -161,7 +157,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onLoginSuccess, 
       id: `log-${Date.now()}`,
       name: trimmedName,
       email: trimmedEmail,
-      department,
+      department: userDept,
       loginTimestamp: nowIso,
       ipAddress: '10.221.113.18 (Institutional Ingress)',
       deviceInfo: navigator.userAgent || 'Web Browser',
@@ -317,11 +313,14 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onLoginSuccess, 
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Masukkan Nama Penuh / Enter Official Name"
+                    placeholder="Masukkan Nama Penuh (e.g. Abdul Waffy)"
                     className="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600/30 focus:border-red-600"
                     required
                   />
                 </div>
+                <p className="text-[10px] text-slate-500 mt-1">
+                  Nama rasmi pemohon PPT
+                </p>
               </div>
 
               {/* Email address */}
@@ -345,35 +344,12 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onLoginSuccess, 
                 </p>
               </div>
 
-              {/* Department Selection */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Department / Section / Unit <span className="text-red-600">*</span>
-                </label>
-                <div className="relative">
-                  <Building2 className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
-                  <select
-                    value={department}
-                    onChange={(e) => setDepartment(e.target.value)}
-                    className="w-full pl-9 pr-8 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600/30 focus:border-red-600 bg-white"
-                    required
-                  >
-                    <option value="" disabled>-- Select Official Department --</option>
-                    {UPM_DEPARTMENTS.map((dept) => (
-                      <option key={dept} value={dept}>
-                        {dept}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
               <button
                 type="submit"
                 className="w-full bg-red-800 hover:bg-red-900 text-white py-2.5 rounded-lg text-xs font-semibold shadow-md transition flex items-center justify-center gap-2 mt-2"
               >
                 <LogIn className="w-4 h-4" />
-                <span>Verify & Authenticate Login</span>
+                <span>Log Masuk Permohonan PPT (Login)</span>
               </button>
             </div>
           )}

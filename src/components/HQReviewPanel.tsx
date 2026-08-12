@@ -28,6 +28,7 @@ interface HQReviewPanelProps {
   onOpenActionModal: (app: ProcurementApplication, decision: 'Approved' | 'Rejected') => void;
   onOpenDetailModal: (app: ProcurementApplication) => void;
   onOpenBudgetModal: () => void;
+  onOpenLogin?: () => void;
 }
 
 export const HQReviewPanel: React.FC<HQReviewPanelProps> = ({
@@ -37,6 +38,7 @@ export const HQReviewPanel: React.FC<HQReviewPanelProps> = ({
   onOpenActionModal,
   onOpenDetailModal,
   onOpenBudgetModal,
+  onOpenLogin,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [deptFilter, setDeptFilter] = useState<string>('ALL');
@@ -259,16 +261,27 @@ export const HQReviewPanel: React.FC<HQReviewPanelProps> = ({
 
       {/* View-Only Banner for Department Users */}
       {user.role !== 'hq' && (
-        <div className="bg-amber-50 border border-amber-200/90 rounded-xl p-3.5 text-amber-900 text-xs flex items-center justify-between gap-3 shadow-sm">
-          <div className="flex items-center gap-2.5">
-            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+        <div className="bg-amber-50 border border-amber-200/90 rounded-xl p-4 text-amber-900 text-xs flex flex-wrap items-center justify-between gap-3 shadow-sm">
+          <div className="flex items-center gap-2.5 max-w-2xl">
+            <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
             <span>
-              <strong>View-Only HQ Approval Module:</strong> You are logged in as <strong>Department PPT Application</strong>. You can view all HQ decision logs and application statuses, but decision actions (Approve / Reject) are strictly reserved for HQ Reviewers.
+              <strong>Modul Semakan HQ (Akses Paparan):</strong> Anda sedang log masuk sebagai <strong>{user.name} ({user.department})</strong>. Anda boleh melihat senarai status permohonan semua jabatan. Untuk membuat kelulusan (Approve) atau penolakan (Reject), sila log masuk dengan peranan Urus Setia HQ.
             </span>
           </div>
-          <span className="bg-amber-200 text-amber-950 text-[10px] font-bold px-2 py-0.5 rounded shrink-0 uppercase tracking-wide">
-            Read-Only Access
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="bg-amber-200 text-amber-950 text-[10px] font-bold px-2 py-1 rounded shrink-0 uppercase tracking-wide">
+              Read-Only Access
+            </span>
+            {onOpenLogin && (
+              <button
+                onClick={onOpenLogin}
+                className="bg-amber-600 hover:bg-amber-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs shadow-sm transition flex items-center gap-1 shrink-0"
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                Log Masuk Urus Setia HQ
+              </button>
+            )}
+          </div>
         </div>
       )}
 

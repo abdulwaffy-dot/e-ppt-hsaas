@@ -1,20 +1,7 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Admin & HQ Review Authority
-    match /{document=**} {
-      allow read, write: if request.auth != null 
-                         && (request.auth.uid == "perolehan_hsaas" || request.auth.token.email == "perolehan_hsaas@upm.edu.my");
-    }
-
-    // HSAAS Staff (@upm.edu.my)
-    match /{document=**} {
-      allow read, write: if request.auth != null 
-                         && request.auth.token.email.matches(".*@upm.edu.my$");
-    }
-
-    // Applications, budgets, logs and profiles collections
+    // Universal access for cross-device multi-department synchronization
     match /applications/{appId} {
       allow read, write: if true;
     }
@@ -27,11 +14,10 @@ service cloud.firestore {
     match /user_profiles/{profileId} {
       allow read, write: if true;
     }
-
-    // General fallback
     match /{document=**} {
       allow read, write: if true;
     }
   }
 }
+
 

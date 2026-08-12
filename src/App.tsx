@@ -400,6 +400,7 @@ export default function App() {
               setIsDetailModalOpen(true);
             }}
             onOpenBudgetModal={() => setIsBudgetModalOpen(true)}
+            onOpenLogin={() => setIsLoginModalOpen(true)}
           />
         )}
 

@@ -18,11 +18,24 @@ import { db, auth } from './firebase';
 import { ProcurementApplication, AnnualBudgets, LoginRecord, UserProfile } from '../types';
 import { INITIAL_APPLICATIONS, INITIAL_ANNUAL_BUDGETS, INITIAL_LOGIN_LOGS } from '../data/mockData';
 
-// Ensure user is authenticated in Firebase Auth for Firestore rules compliance
-export async function authenticateWithFirebase(email: string, password = 'Password123!'): Promise<FirebaseUser | null> {
+// Sanitizer to eliminate undefined values that cause Firestore setDoc/updateDoc to throw
+function sanitizeForFirestore<T>(obj: T): T {
+  return JSON.parse(JSON.stringify(obj, (key, value) => {
+    return value === undefined ? null : value;
+  }));
+}
+
+// Ensure user is authenticated in Firebase Auth for Firestore compliance across all devices
+export async function authenticateWithFirebase(email?: string, password = 'Password123!'): Promise<FirebaseUser | null> {
+  // If already authenticated, reuse session
+  if (auth.currentUser) {
+    return auth.currentUser;
+  }
+
   if (!email || !email.includes('@')) {
     try {
       const anon = await signInAnonymously(auth);
+      console.log('Signed in anonymously to Firebase for device access:', anon.user.uid);
       return anon.user;
     } catch (e) {
       console.warn('Anonymous auth fallback error:', e);
@@ -55,6 +68,13 @@ export async function authenticateWithFirebase(email: string, password = 'Passwo
       return null;
     }
   }
+}
+
+// Initialize anonymous auth immediately on module load to guarantee cross-device access
+if (typeof window !== 'undefined') {
+  authenticateWithFirebase().catch((err) => {
+    console.log('Initial background auth initialized', err);
+  });
 }
 
 // Track Auth State
@@ -120,7 +140,9 @@ async function seedApplications() {
 export async function saveApplicationToFirestore(app: ProcurementApplication) {
   try {
     const docRef = doc(db, 'applications', app.id);
-    await setDoc(docRef, app, { merge: true });
+    const cleanData = sanitizeForFirestore(app);
+    await setDoc(docRef, cleanData, { merge: true });
+    console.log('Successfully saved application to Firestore cloud:', app.id, app.status);
   } catch (err) {
     console.error('Failed to save application to Firestore:', err);
     throw err;
@@ -131,6 +153,7 @@ export async function deleteApplicationFromFirestore(id: string) {
   try {
     const docRef = doc(db, 'applications', id);
     await deleteDoc(docRef);
+    console.log('Successfully deleted application from Firestore:', id);
   } catch (err) {
     console.error('Failed to delete application from Firestore:', err);
     throw err;
@@ -167,7 +190,7 @@ export function subscribeToAnnualBudgets(onUpdate: (budgets: AnnualBudgets) => v
 async function seedAnnualBudgets() {
   try {
     const budgetDocRef = doc(db, 'annual_budgets', 'main');
-    await setDoc(budgetDocRef, { budgets: INITIAL_ANNUAL_BUDGETS });
+    await setDoc(budgetDocRef, { budgets: sanitizeForFirestore(INITIAL_ANNUAL_BUDGETS) });
   } catch (err) {
     console.warn('Failed to seed annual budgets:', err);
   }
@@ -176,7 +199,8 @@ async function seedAnnualBudgets() {
 export async function saveAnnualBudgetsToFirestore(budgets: AnnualBudgets) {
   try {
     const budgetDocRef = doc(db, 'annual_budgets', 'main');
-    await setDoc(budgetDocRef, { budgets }, { merge: true });
+    await setDoc(budgetDocRef, { budgets: sanitizeForFirestore(budgets) }, { merge: true });
+    console.log('Successfully saved annual budgets to Firestore');
   } catch (err) {
     console.error('Failed to save annual budgets to Firestore:', err);
     throw err;
@@ -220,7 +244,7 @@ async function seedLoginLogs() {
       const batch = writeBatch(db);
       INITIAL_LOGIN_LOGS.forEach((record) => {
         const docRef = doc(db, 'login_logs', record.id);
-        batch.set(docRef, record);
+        batch.set(docRef, sanitizeForFirestore(record));
       });
       await batch.commit();
     }
@@ -232,7 +256,7 @@ async function seedLoginLogs() {
 export async function addLoginLogToFirestore(record: LoginRecord) {
   try {
     const docRef = doc(db, 'login_logs', record.id);
-    await setDoc(docRef, record);
+    await setDoc(docRef, sanitizeForFirestore(record));
   } catch (err) {
     console.error('Failed to add login log to Firestore:', err);
   }
@@ -245,7 +269,7 @@ export async function saveUserProfileToFirestore(user: UserProfile) {
     // Sanitize document ID using sanitized email
     const docId = user.email.replace(/[^a-zA-Z0-9]/g, '_');
     const docRef = doc(db, 'user_profiles', docId);
-    await setDoc(docRef, user, { merge: true });
+    await setDoc(docRef, sanitizeForFirestore(user), { merge: true });
   } catch (err) {
     console.error('Failed to save user profile to Firestore:', err);
   }

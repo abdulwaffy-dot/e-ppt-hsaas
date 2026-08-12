@@ -68,47 +68,36 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="md:hidden">Dept PPT</span>
             </button>
 
-            {user.role === 'hq' ? (
-              <>
-                <button
-                  onClick={() => onSelectTab('hq')}
-                  className={`px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5 transition relative ${
-                    currentTab === 'hq'
-                      ? 'bg-amber-500 text-slate-950 font-bold shadow-sm'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-700/60'
-                  }`}
-                >
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  <span>HQ Approval</span>
-                  {pendingHQCount > 0 && (
-                    <span className="bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full ml-0.5">
-                      {pendingHQCount}
-                    </span>
-                  )}
-                </button>
+            <button
+              onClick={() => onSelectTab('hq')}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5 transition relative ${
+                currentTab === 'hq'
+                  ? user.role === 'hq'
+                    ? 'bg-amber-500 text-slate-950 font-bold shadow-sm'
+                    : 'bg-slate-700 text-white font-bold shadow-sm'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-700/60'
+              }`}
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+              <span>HQ Approval</span>
+              {pendingHQCount > 0 && (
+                <span className="bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full ml-0.5 animate-pulse">
+                  {pendingHQCount}
+                </span>
+              )}
+            </button>
 
-                <button
-                  onClick={() => onSelectTab('analytics')}
-                  className={`px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5 transition ${
-                    currentTab === 'analytics'
-                      ? 'bg-cyan-700 text-white shadow-sm'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-700/60'
-                  }`}
-                >
-                  <PieChart className="w-3.5 h-3.5" />
-                  <span>Analytics</span>
-                </button>
-              </>
-            ) : (
-              <div
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-slate-400 bg-slate-900/60 border border-slate-700/60 opacity-80 cursor-not-allowed"
-                title="Akses Terhad: HQ Approval & Analytics hanya untuk Urus Setia HQ Perolehan HSAAS"
-              >
-                <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                <span className="hidden sm:inline">HQ Approval & Analytics (Akses Terhad)</span>
-                <span className="sm:hidden">HQ (Terhad)</span>
-              </div>
-            )}
+            <button
+              onClick={() => onSelectTab('analytics')}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5 transition ${
+                currentTab === 'analytics'
+                  ? 'bg-cyan-700 text-white shadow-sm'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-700/60'
+              }`}
+            >
+              <PieChart className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Analytics</span>
+            </button>
           </nav>
 
           {/* User Quick Actions & Identity */}

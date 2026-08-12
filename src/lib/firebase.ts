@@ -8,7 +8,7 @@ const firebaseConfig = {
   projectId: "e-ppt-hsaas",
   storageBucket: "e-ppt-hsaas.firebasestorage.app",
   messagingSenderId: "601316082203",
-  appId: "1:601316082203:web:fbed712280b67a18b6eebe",
+  appId: "1:601316082203:web:5afdf633653842f7b6eebe",
   measurementId: "G-SX3Z4P76KS"
 };
 

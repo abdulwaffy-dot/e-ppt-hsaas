@@ -91,9 +91,7 @@ export function subscribeToApplications(onUpdate: (apps: ProcurementApplication[
     appsRef,
     (snapshot) => {
       if (snapshot.empty) {
-        // Seed initial applications if Firestore is empty
-        seedApplications();
-        onUpdate(INITIAL_APPLICATIONS);
+        onUpdate([]);
       } else {
         const appsList: ProcurementApplication[] = [];
         snapshot.forEach((docSnap) => {
@@ -106,12 +104,11 @@ export function subscribeToApplications(onUpdate: (apps: ProcurementApplication[
     },
     (error) => {
       console.error('Firestore applications subscription error:', error);
-      // Fallback to initial mock applications on permission error if unauthenticated
       const local = localStorage.getItem('upm_eppt_applications');
       if (local) {
-        try { onUpdate(JSON.parse(local)); } catch { onUpdate(INITIAL_APPLICATIONS); }
+        try { onUpdate(JSON.parse(local)); } catch { onUpdate([]); }
       } else {
-        onUpdate(INITIAL_APPLICATIONS);
+        onUpdate([]);
       }
     }
   );
@@ -119,21 +116,21 @@ export function subscribeToApplications(onUpdate: (apps: ProcurementApplication[
   return unsubscribe;
 }
 
-async function seedApplications() {
+export async function clearAllApplicationsFromFirestore() {
   try {
     const appsRef = collection(db, 'applications');
     const snap = await getDocs(appsRef);
-    if (snap.empty) {
+    if (!snap.empty) {
       const batch = writeBatch(db);
-      INITIAL_APPLICATIONS.forEach((app) => {
-        const docRef = doc(db, 'applications', app.id);
-        batch.set(docRef, app);
+      snap.forEach((docSnap) => {
+        batch.delete(docSnap.ref);
       });
       await batch.commit();
-      console.log('Seeded initial applications into Firestore');
+      console.log('Successfully cleared all applications from Firestore');
     }
   } catch (err) {
-    console.warn('Failed to seed applications (might lack permission until auth):', err);
+    console.error('Failed to clear all applications from Firestore:', err);
+    throw err;
   }
 }
 

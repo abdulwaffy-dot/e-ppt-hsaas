@@ -270,8 +270,19 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
           return (
             <div className="bg-slate-50 border-t border-slate-200 p-4 px-6 flex justify-between items-center flex-wrap gap-3">
               <div>
-                {!readOnly && user?.role !== 'hq' && onEdit && onDelete && (
-                  isOwner ? (
+                {!readOnly && onDelete && (
+                  user?.role === 'hq' ? (
+                    <button
+                      onClick={() => {
+                        onClose();
+                        onDelete(application.id);
+                      }}
+                      className="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-semibold shadow transition flex items-center gap-1.5"
+                      title="Padam Permohonan Ini Sebagai HQ Reviewer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" /> Padam Permohonan (Delete)
+                    </button>
+                  ) : onEdit && isOwner ? (
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => {

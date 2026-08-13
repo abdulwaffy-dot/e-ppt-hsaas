@@ -68,36 +68,68 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="md:hidden">Dept PPT</span>
             </button>
 
-            <button
-              onClick={() => onSelectTab('hq')}
-              className={`px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5 transition relative ${
-                currentTab === 'hq'
-                  ? user.role === 'hq'
-                    ? 'bg-amber-500 text-slate-950 font-bold shadow-sm'
-                    : 'bg-slate-700 text-white font-bold shadow-sm'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-700/60'
-              }`}
-            >
-              <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
-              <span>HQ Approval</span>
-              {pendingHQCount > 0 && (
-                <span className="bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full ml-0.5 animate-pulse">
-                  {pendingHQCount}
-                </span>
-              )}
-            </button>
+            {user.role === 'hq' ? (
+              <>
+                <button
+                  onClick={() => onSelectTab('hq')}
+                  className={`px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5 transition relative ${
+                    currentTab === 'hq'
+                      ? 'bg-amber-500 text-slate-950 font-bold shadow-sm'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-700/60'
+                  }`}
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+                  <span>HQ Approval</span>
+                  {pendingHQCount > 0 && (
+                    <span className="bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full ml-0.5 animate-pulse">
+                      {pendingHQCount}
+                    </span>
+                  )}
+                </button>
 
-            <button
-              onClick={() => onSelectTab('analytics')}
-              className={`px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5 transition ${
-                currentTab === 'analytics'
-                  ? 'bg-cyan-700 text-white shadow-sm'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-700/60'
-              }`}
-            >
-              <PieChart className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Analytics</span>
-            </button>
+                <button
+                  onClick={() => onSelectTab('analytics')}
+                  className={`px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5 transition ${
+                    currentTab === 'analytics'
+                      ? 'bg-cyan-700 text-white shadow-sm'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-700/60'
+                  }`}
+                >
+                  <PieChart className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Analytics</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() =>
+                    alert(
+                      'Akses Terhad: Modul HQ Approval dikunci untuk pengguna Department PPT Application. Hanya Urus Setia HQ Perolehan HSAAS sahaja berhak mengakses modul ini.'
+                    )
+                  }
+                  className="px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5 text-slate-400 bg-slate-900/90 border border-slate-700/80 opacity-80 hover:opacity-100 transition"
+                  title="Akses Terhad: HQ Approval hanya untuk Urus Setia HQ Perolehan HSAAS"
+                >
+                  <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <span className="hidden sm:inline">HQ Approval (Terhad)</span>
+                  <span className="sm:hidden">HQ (Terhad)</span>
+                </button>
+
+                <button
+                  onClick={() =>
+                    alert(
+                      'Akses Terhad: Modul Analytics dikunci untuk pengguna Department PPT Application. Hanya Urus Setia HQ Perolehan HSAAS sahaja berhak mengakses modul ini.'
+                    )
+                  }
+                  className="px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5 text-slate-400 bg-slate-900/90 border border-slate-700/80 opacity-80 hover:opacity-100 transition"
+                  title="Akses Terhad: Analytics hanya untuk Urus Setia HQ Perolehan HSAAS"
+                >
+                  <Lock className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                  <span className="hidden sm:inline">Analytics (Terhad)</span>
+                  <span className="sm:hidden">Analytics</span>
+                </button>
+              </>
+            )}
           </nav>
 
           {/* User Quick Actions & Identity */}

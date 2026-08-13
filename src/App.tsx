@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { Lock, ShieldCheck } from 'lucide-react';
 import {
   UserProfile,
   ProcurementApplication,
@@ -18,6 +19,7 @@ import {
   subscribeToLoginLogs,
   saveApplicationToFirestore,
   deleteApplicationFromFirestore,
+  clearAllApplicationsFromFirestore,
   saveAnnualBudgetsToFirestore,
   addLoginLogToFirestore,
   authenticateWithFirebase,
@@ -117,6 +119,43 @@ export default function App() {
 
   // Navigation tab state
   const [activeTab, setActiveTab] = useState<'applicant' | 'hq' | 'analytics'>('applicant');
+
+  // Safe tab switcher enforcing HQ lock for applicant/department users
+  const handleSelectTab = (tab: 'applicant' | 'hq' | 'analytics') => {
+    if (tab !== 'applicant' && user.role !== 'hq') {
+      alert(
+        'Akses Terhad: Modul HQ Approval & Analytics dikunci untuk pengguna Department PPT Application. Hanya Urus Setia HQ Perolehan HSAAS sahaja berhak mengakses modul ini.'
+      );
+      setActiveTab('applicant');
+      return;
+    }
+    setActiveTab(tab);
+  };
+
+  // Enforce tab locking if user role changes away from HQ
+  useEffect(() => {
+    if (user.role !== 'hq' && (activeTab === 'hq' || activeTab === 'analytics')) {
+      setActiveTab('applicant');
+    }
+  }, [user.role, activeTab]);
+
+  // Clear all applications from HQ review panel & Firestore
+  const handleClearAllApplications = async () => {
+    if (
+      window.confirm(
+        'Adakah anda pasti mahu memadam SEMUA permohonan daripada HQ Approval dan pangkalan data? Semua permohonan akan dikosongkan untuk pendaftaran permohonan baru.'
+      )
+    ) {
+      setApplications([]);
+      localStorage.setItem(STORAGE_KEY_APPS, JSON.stringify([]));
+      try {
+        await clearAllApplicationsFromFirestore();
+        alert('Semua permohonan dalam pangkalan data telah berjaya dipadamkan.');
+      } catch (err) {
+        console.error('Failed to clear applications from Firestore:', err);
+      }
+    }
+  };
 
   // Authentication session state
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
@@ -354,7 +393,7 @@ export default function App() {
       {/* Top Navbar */}
       <Navbar
         currentTab={activeTab}
-        onSelectTab={setActiveTab}
+        onSelectTab={handleSelectTab}
         user={user}
         onOpenVerification={() => setIsVerificationModalOpen(true)}
         onOpenLoginHistory={() => setIsLoginHistoryOpen(true)}
@@ -385,33 +424,85 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'hq' && (
-          <HQReviewPanel
-            applications={applications}
-            user={user}
-            annualBudgets={annualBudgets}
-            onOpenActionModal={(app, decision) => {
-              setActionApp(app);
-              setActionDecisionType(decision);
-              setIsActionModalOpen(true);
-            }}
-            onOpenDetailModal={(app) => {
-              setSelectedDetailApp(app);
-              setIsDetailModalOpen(true);
-            }}
-            onOpenBudgetModal={() => setIsBudgetModalOpen(true)}
-            onOpenLogin={() => setIsLoginModalOpen(true)}
-          />
-        )}
+        {activeTab === 'hq' &&
+          (user.role === 'hq' ? (
+            <HQReviewPanel
+              applications={applications}
+              user={user}
+              annualBudgets={annualBudgets}
+              onOpenActionModal={(app, decision) => {
+                setActionApp(app);
+                setActionDecisionType(decision);
+                setIsActionModalOpen(true);
+              }}
+              onOpenDetailModal={(app) => {
+                setSelectedDetailApp(app);
+                setIsDetailModalOpen(true);
+              }}
+              onOpenBudgetModal={() => setIsBudgetModalOpen(true)}
+              onOpenLogin={() => setIsLoginModalOpen(true)}
+              onClearAllApplications={handleClearAllApplications}
+              onDeleteApplication={handleDeleteApplication}
+            />
+          ) : (
+            <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-md text-center max-w-xl mx-auto space-y-4 my-10">
+              <div className="w-14 h-14 rounded-full bg-amber-100 border border-amber-200 text-amber-600 flex items-center justify-center mx-auto shadow-inner">
+                <Lock className="w-7 h-7" />
+              </div>
+              <h2 className="text-xl font-bold text-slate-800">Akses Terhad - HQ Approval</h2>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Anda sedang log masuk sebagai <strong>{user.name} ({user.department})</strong>. Modul HQ Approval dikunci untuk pengguna Department PPT Application.
+              </p>
+              <div className="pt-2 flex flex-wrap justify-center gap-3">
+                <button
+                  onClick={() => setActiveTab('applicant')}
+                  className="px-4 py-2 bg-slate-800 text-white rounded-lg text-xs font-bold hover:bg-slate-900 transition shadow-sm"
+                >
+                  Kembali ke Department PPT Application
+                </button>
+                <button
+                  onClick={() => setIsLoginModalOpen(true)}
+                  className="px-4 py-2 bg-amber-500 text-slate-950 font-bold rounded-lg text-xs hover:bg-amber-400 transition shadow-sm"
+                >
+                  Log Masuk Urus Setia HQ
+                </button>
+              </div>
+            </div>
+          ))}
 
-        {activeTab === 'analytics' && (
-          <AnalyticsDashboard
-            applications={applications}
-            user={user}
-            annualBudgets={annualBudgets}
-            onOpenBudgetModal={() => setIsBudgetModalOpen(true)}
-          />
-        )}
+        {activeTab === 'analytics' &&
+          (user.role === 'hq' ? (
+            <AnalyticsDashboard
+              applications={applications}
+              user={user}
+              annualBudgets={annualBudgets}
+              onOpenBudgetModal={() => setIsBudgetModalOpen(true)}
+            />
+          ) : (
+            <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-md text-center max-w-xl mx-auto space-y-4 my-10">
+              <div className="w-14 h-14 rounded-full bg-cyan-100 border border-cyan-200 text-cyan-700 flex items-center justify-center mx-auto shadow-inner">
+                <Lock className="w-7 h-7" />
+              </div>
+              <h2 className="text-xl font-bold text-slate-800">Akses Terhad - Analytics</h2>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Anda sedang log masuk sebagai <strong>{user.name} ({user.department})</strong>. Modul Analytics dikunci untuk pengguna Department PPT Application.
+              </p>
+              <div className="pt-2 flex flex-wrap justify-center gap-3">
+                <button
+                  onClick={() => setActiveTab('applicant')}
+                  className="px-4 py-2 bg-slate-800 text-white rounded-lg text-xs font-bold hover:bg-slate-900 transition shadow-sm"
+                >
+                  Kembali ke Department PPT Application
+                </button>
+                <button
+                  onClick={() => setIsLoginModalOpen(true)}
+                  className="px-4 py-2 bg-amber-500 text-slate-950 font-bold rounded-lg text-xs hover:bg-amber-400 transition shadow-sm"
+                >
+                  Log Masuk Urus Setia HQ
+                </button>
+              </div>
+            </div>
+          ))}
       </main>
 
       {/* Fixed Footer Bar with Section 01 Required Info */}
@@ -456,7 +547,7 @@ export default function App() {
         onClose={() => setIsDetailModalOpen(false)}
         application={selectedDetailApp}
         user={user}
-        readOnly={activeTab === 'hq' || activeTab === 'analytics'}
+        readOnly={activeTab === 'analytics'}
         onEdit={(app) => {
           setEditingApplication(app);
           setIsFormModalOpen(true);

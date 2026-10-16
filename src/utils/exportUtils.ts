@@ -64,7 +64,10 @@ export async function exportHQReportToExcel({
     'Project / Item Title',
     'Category',
     'Applicant Name',
-    'Est. Cost (RM)',
+    'Original Cost (RM)',
+    'Revised Cost (RM)',
+    'Difference (RM)',
+    'Adjustment Status',
     'Status',
     'HQ Justification / Decision Notes',
   ];
@@ -97,6 +100,16 @@ export async function exportHQReportToExcel({
       totalApprovedCost += app.estimatedCost;
     }
 
+    const origCost = app.originalEstimatedCost ?? app.estimatedCost;
+    const revCost = app.estimatedCost;
+    const diff = revCost - origCost;
+    const adjStatus =
+      app.isAmountAdjusted || Math.abs(diff) > 0.01
+        ? diff < 0
+          ? `Diturunkan (-RM ${Math.abs(diff).toLocaleString()})`
+          : `Dinaikkan (+RM ${diff.toLocaleString()})`
+        : 'Tiada Perubahan';
+
     const row = sheet1.addRow([
       app.referenceNo,
       app.year,
@@ -104,7 +117,10 @@ export async function exportHQReportToExcel({
       app.title,
       app.expenditureCategoryName || app.expenditureCategoryCode || '-',
       app.applicantName,
-      app.estimatedCost,
+      origCost,
+      revCost,
+      diff,
+      adjStatus,
       app.status,
       app.hqDecision?.justification || app.remarksJustification || '-',
     ]);
@@ -116,14 +132,14 @@ export async function exportHQReportToExcel({
       cell.font = { name: 'Arial', size: 9 };
       cell.alignment = { vertical: 'middle' };
 
-      // Number formatting for Cost
-      if (colNumber === 7) {
+      // Number formatting for Original, Revised, Diff Cost
+      if (colNumber === 7 || colNumber === 8 || colNumber === 9) {
         cell.numFmt = '"RM "#,##0.00';
         cell.alignment = { vertical: 'middle', horizontal: 'right' };
       }
 
       // Status styling
-      if (colNumber === 8) {
+      if (colNumber === 11) {
         cell.alignment = { vertical: 'middle', horizontal: 'center' };
         if (app.status === 'Approved') {
           cell.font = { name: 'Arial', size: 9, bold: true, color: { argb: '065F46' } }; // Dark green
@@ -354,16 +370,24 @@ export function exportHQReportToPDF({
   doc.text(`RM ${activeBudget.toLocaleString()}`, 222, startY + 11);
 
   // 3. AutoTable Data
-  const tableData = applications.map((app) => [
-    app.referenceNo,
-    app.year.toString(),
-    app.department,
-    app.title.length > 38 ? app.title.substring(0, 35) + '...' : app.title,
-    app.expenditureCategoryName || app.expenditureCategoryCode || '-',
-    app.applicantName,
-    `RM ${app.estimatedCost.toLocaleString()}`,
-    app.status,
-  ]);
+  const tableData = applications.map((app) => {
+    const origCost = app.originalEstimatedCost ?? app.estimatedCost;
+    const isAdj = app.isAmountAdjusted || Math.abs(app.estimatedCost - origCost) > 0.01;
+    const costText = isAdj
+      ? `RM ${app.estimatedCost.toLocaleString()}\n(Asal: RM ${origCost.toLocaleString()})`
+      : `RM ${app.estimatedCost.toLocaleString()}`;
+
+    return [
+      app.referenceNo,
+      app.year.toString(),
+      app.department,
+      app.title.length > 38 ? app.title.substring(0, 35) + '...' : app.title,
+      app.expenditureCategoryName || app.expenditureCategoryCode || '-',
+      app.applicantName,
+      costText,
+      app.status,
+    ];
+  });
 
   autoTable(doc, {
     startY: 55,

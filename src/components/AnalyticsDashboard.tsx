@@ -180,23 +180,41 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       'Service Type',
       'Category Code',
       'Category Name',
-      'Estimated Cost (RM)',
+      'Original Requested Cost (RM)',
+      'Revised Cost (RM)',
+      'Difference (RM)',
+      'Adjustment Status',
       'Status',
     ];
 
-    const rows = filteredApps.map((a) => [
-      `"${a.referenceNo}"`,
-      `"${a.title.replace(/"/g, '""')}"`,
-      `"${a.department}"`,
-      a.year,
-      `"${a.allocationType}"`,
-      a.procurementMethod,
-      a.serviceType,
-      a.expenditureCategoryCode,
-      `"${a.expenditureCategoryName}"`,
-      a.estimatedCost,
-      a.status,
-    ]);
+    const rows = filteredApps.map((a) => {
+      const origCost = a.originalEstimatedCost ?? a.estimatedCost;
+      const revCost = a.estimatedCost;
+      const diff = revCost - origCost;
+      const adjStatus =
+        a.isAmountAdjusted || Math.abs(diff) > 0.01
+          ? diff < 0
+            ? 'Reduced'
+            : 'Increased'
+          : 'Original';
+
+      return [
+        `"${a.referenceNo}"`,
+        `"${a.title.replace(/"/g, '""')}"`,
+        `"${a.department}"`,
+        a.year,
+        `"${a.allocationType}"`,
+        a.procurementMethod,
+        a.serviceType,
+        a.expenditureCategoryCode,
+        `"${a.expenditureCategoryName}"`,
+        origCost,
+        revCost,
+        diff,
+        adjStatus,
+        a.status,
+      ];
+    });
 
     const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
 

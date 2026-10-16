@@ -15,6 +15,7 @@ import {
   FileCheck,
   Settings,
   TrendingUp,
+  TrendingDown,
   Sliders,
   FileSpreadsheet,
   FileText,
@@ -32,6 +33,7 @@ interface HQReviewPanelProps {
   onOpenLogin?: () => void;
   onClearAllApplications?: () => void;
   onDeleteApplication?: (id: string) => void;
+  onOpenAdjustAmount?: (app: ProcurementApplication) => void;
 }
 
 export const HQReviewPanel: React.FC<HQReviewPanelProps> = ({
@@ -44,6 +46,7 @@ export const HQReviewPanel: React.FC<HQReviewPanelProps> = ({
   onOpenLogin,
   onClearAllApplications,
   onDeleteApplication,
+  onOpenAdjustAmount,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [deptFilter, setDeptFilter] = useState<string>('ALL');
@@ -606,10 +609,64 @@ export const HQReviewPanel: React.FC<HQReviewPanelProps> = ({
                         </div>
                       </td>
 
-                      {/* Estimated Cost */}
-                      <td className="p-3.5 font-mono font-bold text-emerald-700 text-sm">
-                        {formattedRM}
-                      </td>
+                      {/* Estimated Cost (Original vs Adjusted Transparency) */}
+                      {(() => {
+                        const originalCost = app.originalEstimatedCost ?? app.estimatedCost;
+                        const activeCost = app.estimatedCost;
+                        const isAdjusted =
+                          app.isAmountAdjusted ||
+                          (app.originalEstimatedCost !== undefined &&
+                            Math.abs(app.estimatedCost - app.originalEstimatedCost) > 0.01);
+                        const diffCost = activeCost - originalCost;
+                        const direction =
+                          diffCost < -0.01 ? 'reduced' : diffCost > 0.01 ? 'increased' : 'unchanged';
+                        const formatRM = (val: number) =>
+                          new Intl.NumberFormat('en-MY', {
+                            style: 'currency',
+                            currency: 'MYR',
+                          }).format(val);
+
+                        return (
+                          <td className="p-3.5 font-mono text-xs">
+                            {isAdjusted ? (
+                              <div className="space-y-1">
+                                <div className="font-bold text-slate-900 text-sm">
+                                  {formatRM(activeCost)}
+                                </div>
+                                <div className="text-[10px] text-slate-500 font-sans">
+                                  Asal: <span className="line-through font-mono">{formatRM(originalCost)}</span>
+                                </div>
+                                <div>
+                                  <span
+                                    className={`text-[10px] font-bold px-1.5 py-0.5 rounded border inline-flex items-center gap-0.5 ${
+                                      direction === 'reduced'
+                                        ? 'bg-amber-100 text-amber-800 border-amber-300'
+                                        : 'bg-blue-100 text-blue-800 border-blue-300'
+                                    }`}
+                                    title={`HQ Review: ${direction === 'reduced' ? 'Diturunkan' : 'Dinaikkan'} sebanyak ${formatRM(Math.abs(diffCost))}`}
+                                  >
+                                    {direction === 'reduced' ? (
+                                      <>
+                                        <TrendingDown className="w-3 h-3 text-amber-600" />
+                                        Diturunkan (-{formatRM(Math.abs(diffCost))})
+                                      </>
+                                    ) : (
+                                      <>
+                                        <TrendingUp className="w-3 h-3 text-blue-600" />
+                                        Dinaikkan (+{formatRM(diffCost)})
+                                      </>
+                                    )}
+                                  </span>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="font-bold text-emerald-700 text-sm">
+                                {formatRM(activeCost)}
+                              </div>
+                            )}
+                          </td>
+                        );
+                      })()}
 
                       {/* Status & HQ Justification */}
                       <td className="p-3.5 max-w-xs">
@@ -634,6 +691,17 @@ export const HQReviewPanel: React.FC<HQReviewPanelProps> = ({
                           >
                             <Eye className="w-3.5 h-3.5" />
                           </button>
+
+                          {user.role === 'hq' && onOpenAdjustAmount && (
+                            <button
+                              onClick={() => onOpenAdjustAmount(app)}
+                              className="px-2 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded text-[11px] font-bold shadow-xs transition flex items-center gap-1"
+                              title="Laras Amaun Yang Dimohon (HQ Review)"
+                            >
+                              <Sliders className="w-3.5 h-3.5" />
+                              <span>Laras Amaun</span>
+                            </button>
+                          )}
 
                           {app.status === 'Submitted' && user.role === 'hq' && (
                             <>

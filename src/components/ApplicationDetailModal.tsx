@@ -1,6 +1,29 @@
 import React from 'react';
 import { ProcurementApplication, UserProfile } from '../types';
-import { X, Building2, User, Mail, Calendar, Tag, FileText, CheckCircle2, XCircle, Clock, ShieldCheck, DollarSign, Edit2, Trash2, Lock } from 'lucide-react';
+import {
+  X,
+  Building2,
+  User,
+  Mail,
+  Calendar,
+  Tag,
+  FileText,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  ShieldCheck,
+  DollarSign,
+  Edit2,
+  Trash2,
+  Lock,
+  TrendingDown,
+  TrendingUp,
+  Minus,
+  Sliders,
+  History,
+  AlertCircle,
+  Info,
+} from 'lucide-react';
 
 interface ApplicationDetailModalProps {
   isOpen: boolean;
@@ -10,6 +33,7 @@ interface ApplicationDetailModalProps {
   readOnly?: boolean;
   onEdit?: (app: ProcurementApplication) => void;
   onDelete?: (id: string) => void;
+  onOpenAdjustAmount?: (app: ProcurementApplication) => void;
 }
 
 export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
@@ -20,6 +44,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
   readOnly = false,
   onEdit,
   onDelete,
+  onOpenAdjustAmount,
 }) => {
   if (!isOpen || !application) return null;
 
@@ -53,10 +78,19 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
     );
   }
 
-  const formattedCost = new Intl.NumberFormat('en-MY', {
-    style: 'currency',
-    currency: 'MYR',
-  }).format(application.estimatedCost);
+  const originalCost = application.originalEstimatedCost ?? application.estimatedCost;
+  const activeCost = application.estimatedCost;
+  const isAdjusted = application.isAmountAdjusted || (application.originalEstimatedCost !== undefined && Math.abs(application.estimatedCost - application.originalEstimatedCost) > 0.01);
+  const diffCost = activeCost - originalCost;
+  const percentDiff = originalCost > 0 ? (diffCost / originalCost) * 100 : 0;
+  const direction = diffCost < -0.01 ? 'reduced' : diffCost > 0.01 ? 'increased' : 'unchanged';
+
+  const formatRM = (val: number) =>
+    new Intl.NumberFormat('en-MY', {
+      style: 'currency',
+      currency: 'MYR',
+      minimumFractionDigits: 2,
+    }).format(val);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -96,11 +130,23 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
         {/* Header */}
         <div className="bg-slate-900 text-white p-5 px-6 flex items-center justify-between border-b border-slate-800">
           <div>
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
               <span className="font-mono text-xs text-amber-400 font-bold bg-slate-800 px-2 py-0.5 rounded border border-slate-700">
                 {application.referenceNo}
               </span>
               {getStatusBadge(application.status)}
+              {isAdjusted && (
+                <span
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full border inline-flex items-center gap-1 ${
+                    direction === 'reduced'
+                      ? 'bg-amber-950 text-amber-300 border-amber-700'
+                      : 'bg-blue-950 text-blue-300 border-blue-700'
+                  }`}
+                >
+                  {direction === 'reduced' ? <TrendingDown className="w-3 h-3" /> : <TrendingUp className="w-3 h-3" />}
+                  HQ Adjusted ({formatRM(activeCost)})
+                </span>
+              )}
             </div>
             <h2 className="text-base font-bold text-white tracking-tight leading-snug">
               {application.title}
@@ -119,8 +165,15 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
           {/* Main Key Info Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-              <span className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Estimated Cost</span>
-              <div className="text-base font-bold text-emerald-700 font-mono">{formattedCost}</div>
+              <span className="text-[10px] text-slate-500 font-bold uppercase block mb-1">
+                {isAdjusted ? 'Revised Cost (HQ)' : 'Estimated Cost'}
+              </span>
+              <div className="text-base font-bold text-emerald-700 font-mono">{formatRM(activeCost)}</div>
+              {isAdjusted && (
+                <span className="text-[10px] text-slate-500 block mt-0.5">
+                  Asal: <span className="line-through">{formatRM(originalCost)}</span>
+                </span>
+              )}
             </div>
 
             <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
@@ -141,6 +194,162 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
               <div className="font-bold text-slate-800 text-xs">{application.allocationType}</div>
             </div>
           </div>
+
+          {/* Section: HQ Amount Adjustment & Transparency Notice (Displayed to Applicant & HQ) */}
+          {isAdjusted ? (
+            <div className="bg-gradient-to-r from-amber-50/90 via-white to-slate-50 border border-amber-300/80 rounded-xl p-4 space-y-3 shadow-xs">
+              <div className="flex items-center justify-between border-b border-amber-200 pb-2 flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-amber-500/20 text-amber-800 rounded-lg">
+                    <Sliders className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-xs text-slate-900 uppercase tracking-wider">
+                      Penyelarasan Amaun oleh HQ Review (Amount Adjustment)
+                    </h3>
+                    <p className="text-[10px] text-slate-600">
+                      Urus Setia HQ telah melaraskan amaun permohonan ini untuk ketelusan sebelum kelulusan
+                    </p>
+                  </div>
+                </div>
+
+                <span
+                  className={`px-2.5 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1 border ${
+                    direction === 'reduced'
+                      ? 'bg-amber-100 text-amber-800 border-amber-300'
+                      : 'bg-blue-100 text-blue-800 border-blue-300'
+                  }`}
+                >
+                  {direction === 'reduced' ? (
+                    <>
+                      <TrendingDown className="w-3.5 h-3.5 text-amber-700" />
+                      Diturunkan oleh HQ (-{formatRM(Math.abs(diffCost))})
+                    </>
+                  ) : (
+                    <>
+                      <TrendingUp className="w-3.5 h-3.5 text-blue-700" />
+                      Dinaikkan oleh HQ (+{formatRM(diffCost)})
+                    </>
+                  )}
+                </span>
+              </div>
+
+              {/* Amount Breakdown Comparison */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+                <div className="bg-white p-3 rounded-lg border border-slate-200">
+                  <span className="text-[10px] text-slate-500 font-semibold uppercase block">
+                    1. Amaun Asal Dimohon
+                  </span>
+                  <div className="font-mono text-sm font-bold text-slate-800 mt-0.5">
+                    {formatRM(originalCost)}
+                  </div>
+                  <span className="text-[10px] text-slate-400">Dimohon oleh pemohon</span>
+                </div>
+
+                <div className="bg-white p-3 rounded-lg border border-slate-200">
+                  <span className="text-[10px] text-slate-500 font-semibold uppercase block">
+                    2. Amaun Dilaraskan HQ
+                  </span>
+                  <div className="font-mono text-sm font-bold text-emerald-700 mt-0.5">
+                    {formatRM(activeCost)}
+                  </div>
+                  <span className="text-[10px] text-emerald-600 font-medium">Amaun aktif semasa</span>
+                </div>
+
+                <div className="bg-white p-3 rounded-lg border border-slate-200">
+                  <span className="text-[10px] text-slate-500 font-semibold uppercase block">
+                    3. Perbezaan Nilai
+                  </span>
+                  <div
+                    className={`font-mono text-sm font-bold mt-0.5 ${
+                      direction === 'reduced' ? 'text-amber-700' : 'text-blue-700'
+                    }`}
+                  >
+                    {direction === 'reduced' ? '-' : '+'}
+                    {formatRM(Math.abs(diffCost))} ({percentDiff.toFixed(1)}%)
+                  </div>
+                  <span className="text-[10px] text-slate-500">
+                    {direction === 'reduced' ? 'Pengurangan belanja' : 'Peningkatan had'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Adjustment Details & Explanation */}
+              <div className="p-2.5 bg-amber-100/40 rounded-lg border border-amber-200/60 text-[11px] text-slate-700 space-y-1">
+                <div className="flex items-center gap-1 font-bold text-slate-900">
+                  <Info className="w-3.5 h-3.5 text-amber-700" />
+                  Makluman Ketelusan Pemohon:
+                </div>
+                <p className="leading-relaxed">
+                  Penyelarasan amaun dilakukan berdasarkan siling peruntukan 14005 atau semakan skop teknikal oleh Urus Setia HQ.
+                  {application.lastAdjustedBy && (
+                    <span> Terakhir diselaraskan oleh <strong>{application.lastAdjustedBy}</strong>.</span>
+                  )}
+                </p>
+              </div>
+
+              {/* Audit Trail List of Adjustments */}
+              {application.amountAdjustments && application.amountAdjustments.length > 0 && (
+                <div className="space-y-2 pt-2 border-t border-slate-200">
+                  <div className="flex items-center gap-1.5 font-bold text-[11px] text-slate-900">
+                    <History className="w-3.5 h-3.5 text-slate-500" />
+                    Kronologi & Log Audit Penyelarasan Amaun:
+                  </div>
+                  <div className="space-y-1.5">
+                    {application.amountAdjustments.map((adj) => (
+                      <div
+                        key={adj.id}
+                        className="bg-white p-2.5 rounded-lg border border-slate-200 text-[11px] space-y-1"
+                      >
+                        <div className="flex items-center justify-between text-slate-500 text-[10px]">
+                          <span>
+                            Pegawai HQ: <strong className="text-slate-800">{adj.adjustedBy}</strong> ({adj.adjustedByEmail})
+                          </span>
+                          <span>{adj.dateFormatted || new Date(adj.adjustmentDate).toLocaleDateString('en-GB')} {adj.timeFormatted}</span>
+                        </div>
+                        <div className="flex items-center gap-2 font-mono font-bold text-slate-900 flex-wrap">
+                          <span>{formatRM(adj.originalAmount)}</span>
+                          <span className="text-slate-400">➔</span>
+                          <span className="text-emerald-700">{formatRM(adj.adjustedAmount)}</span>
+                          <span
+                            className={`text-[10px] px-1.5 py-0.2 rounded font-sans font-bold ${
+                              adj.direction === 'reduced'
+                                ? 'bg-amber-100 text-amber-800'
+                                : 'bg-blue-100 text-blue-800'
+                            }`}
+                          >
+                            {adj.direction === 'reduced' ? 'Diturunkan' : 'Dinaikkan'} ({formatRM(Math.abs(adj.differenceAmount))})
+                          </span>
+                        </div>
+                        {adj.justification && (
+                          <div className="text-slate-600 italic bg-slate-50 p-1.5 rounded border border-slate-100">
+                            "{adj.justification}"
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : user?.role === 'hq' ? (
+            /* HQ quick action to adjust amount if not yet adjusted */
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2 text-slate-600">
+                <Sliders className="w-4 h-4 text-slate-500" />
+                <span>Amaun semasa masih pada nilai asal yang dipohon ({formatRM(originalCost)}).</span>
+              </div>
+              {onOpenAdjustAmount && (
+                <button
+                  type="button"
+                  onClick={() => onOpenAdjustAmount(application)}
+                  className="px-3 py-1 bg-red-800 hover:bg-red-900 text-white rounded text-[11px] font-bold shadow-xs transition inline-flex items-center gap-1"
+                >
+                  <Sliders className="w-3 h-3" /> Laras Amaun Ini
+                </button>
+              )}
+            </div>
+          ) : null}
 
           {/* Section 03 Application Breakdown */}
           <div className="space-y-3 bg-slate-50/70 border border-slate-200 rounded-lg p-4">
@@ -270,19 +479,36 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
           return (
             <div className="bg-slate-50 border-t border-slate-200 p-4 px-6 flex justify-between items-center flex-wrap gap-3">
               <div>
-                {!readOnly && onDelete && (
+                {!readOnly && (
                   user?.role === 'hq' ? (
-                    <button
-                      onClick={() => {
-                        onClose();
-                        onDelete(application.id);
-                      }}
-                      className="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-semibold shadow transition flex items-center gap-1.5"
-                      title="Padam Permohonan Ini Sebagai HQ Reviewer"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" /> Padam Permohonan (Delete)
-                    </button>
-                  ) : onEdit && isOwner ? (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {onOpenAdjustAmount && (
+                        <button
+                          onClick={() => {
+                            onClose();
+                            onOpenAdjustAmount(application);
+                          }}
+                          className="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-xs shadow transition flex items-center gap-1.5"
+                          title="Laras Amaun Permohonan Ini Sebagai HQ"
+                        >
+                          <Sliders className="w-3.5 h-3.5" /> Laras Amaun (Adjust Amount)
+                        </button>
+                      )}
+                      {onDelete && (
+                        <button
+                          onClick={() => {
+                            onClose();
+                            onDelete(application.id);
+                          }}
+                          className="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-semibold shadow transition flex items-center gap-1.5"
+                          title="Padam Permohonan Ini Sebagai HQ Reviewer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" /> Padam Permohonan (HQ Delete)
+                        </button>
+                      )}
+                    </div>
+                  ) : onEdit && isOwner && application.status === 'Draft' ? (
+                    /* Applicant: Only edit permitted for Drafts; Delete function removed per requirements */
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => {
@@ -291,22 +517,17 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                         }}
                         className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow transition flex items-center gap-1.5"
                       >
-                        <Edit2 className="w-3.5 h-3.5" /> Edit Application
-                      </button>
-                      <button
-                        onClick={() => {
-                          onClose();
-                          onDelete(application.id);
-                        }}
-                        className="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-semibold shadow transition flex items-center gap-1.5"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" /> Delete Application
+                        <Edit2 className="w-3.5 h-3.5" /> Edit Permohonan (Draft)
                       </button>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-900 border border-amber-200 rounded-lg text-xs font-medium">
-                      <Lock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                      <span>Hak Milik Terhad: Hanya pemohon asal (<strong>{application.applicantName}</strong>) boleh mengedit permohonan ini.</span>
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-xs font-medium">
+                      <Lock className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                      <span>
+                        {application.status === 'Submitted' || application.status === 'Approved'
+                          ? 'Permohonan telah dihantar/diluluskan dan berada dalam kawalan semakan HQ.'
+                          : `Hak Milik Terhad: Dimiliki oleh ${application.applicantName}.`}
+                      </span>
                     </div>
                   )
                 )}

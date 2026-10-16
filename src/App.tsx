@@ -11,17 +11,24 @@ import {
   LoginRecord,
   HQDecision,
   AnnualBudgets,
+  DeletionAuditLog,
+  DeletionReasonCategory,
+  AmountAdjustment,
 } from './types';
 import { INITIAL_APPLICATIONS, INITIAL_LOGIN_LOGS, INITIAL_ANNUAL_BUDGETS } from './data/mockData';
 import {
   subscribeToApplications,
   subscribeToAnnualBudgets,
   subscribeToLoginLogs,
+  subscribeToAuditLogs,
   saveApplicationToFirestore,
   deleteApplicationFromFirestore,
+  batchDeleteApplicationsFromFirestore,
   clearAllApplicationsFromFirestore,
   saveAnnualBudgetsToFirestore,
   addLoginLogToFirestore,
+  addAuditLogToFirestore,
+  clearAuditLogsFromFirestore,
   authenticateWithFirebase,
 } from './lib/firebaseService';
 
@@ -33,7 +40,9 @@ import { LoginHistoryModal } from './components/LoginHistoryModal';
 import { ApplicationFormModal } from './components/ApplicationFormModal';
 import { ApplicationDetailModal } from './components/ApplicationDetailModal';
 import { HQReviewActionModal } from './components/HQReviewActionModal';
+import { HQAmountAdjustModal } from './components/HQAmountAdjustModal';
 import { HQBudgetModal } from './components/HQBudgetModal';
+import { HQDeleteConfirmationModal } from './components/HQDeleteConfirmationModal';
 import { DepartmentApplicationsList } from './components/DepartmentApplicationsList';
 import { HQReviewPanel } from './components/HQReviewPanel';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
@@ -42,6 +51,7 @@ const STORAGE_KEY_USER = 'upm_eppt_user_profile';
 const STORAGE_KEY_APPS = 'upm_eppt_applications';
 const STORAGE_KEY_LOGS = 'upm_eppt_login_logs';
 const STORAGE_KEY_BUDGETS = 'upm_eppt_annual_budgets';
+const STORAGE_KEY_AUDIT_LOGS = 'upm_eppt_audit_logs';
 
 export default function App() {
   // Load initial persistent user or set default
@@ -117,6 +127,23 @@ export default function App() {
     return INITIAL_ANNUAL_BUDGETS;
   });
 
+  // Load Deletion Audit Logs
+  const [auditLogs, setAuditLogs] = useState<DeletionAuditLog[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_AUDIT_LOGS);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse saved audit logs:', e);
+      }
+    }
+    return [];
+  });
+
+  // HQ Deletion Modal state
+  const [isHQDeleteModalOpen, setIsHQDeleteModalOpen] = useState(false);
+  const [appsToDelete, setAppsToDelete] = useState<ProcurementApplication[]>([]);
+
   // Navigation tab state
   const [activeTab, setActiveTab] = useState<'applicant' | 'hq' | 'analytics'>('applicant');
 
@@ -176,6 +203,8 @@ export default function App() {
   const [selectedDetailApp, setSelectedDetailApp] = useState<ProcurementApplication | null>(null);
   const [actionApp, setActionApp] = useState<ProcurementApplication | null>(null);
   const [actionDecisionType, setActionDecisionType] = useState<'Approved' | 'Rejected' | null>(null);
+  const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
+  const [appToAdjust, setAppToAdjust] = useState<ProcurementApplication | null>(null);
 
   // Save to LocalStorage effects
   useEffect(() => {
@@ -197,6 +226,10 @@ export default function App() {
     localStorage.setItem(STORAGE_KEY_BUDGETS, JSON.stringify(annualBudgets));
   }, [annualBudgets]);
 
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_AUDIT_LOGS, JSON.stringify(auditLogs));
+  }, [auditLogs]);
+
   // Real-time Firestore Subscriptions
   useEffect(() => {
     const unsubApps = subscribeToApplications((firestoreApps) => {
@@ -211,10 +244,15 @@ export default function App() {
       setLoginLogs(firestoreLogs);
     });
 
+    const unsubAuditLogs = subscribeToAuditLogs((firestoreAuditLogs) => {
+      setAuditLogs(firestoreAuditLogs);
+    });
+
     return () => {
       unsubApps();
       unsubBudgets();
       unsubLogs();
+      unsubAuditLogs();
     };
   }, []);
 
@@ -241,6 +279,13 @@ export default function App() {
           setAnnualBudgets(JSON.parse(e.newValue));
         } catch (err) {
           console.error('Failed to sync budgets from storage event:', err);
+        }
+      }
+      if (e.key === STORAGE_KEY_AUDIT_LOGS && e.newValue) {
+        try {
+          setAuditLogs(JSON.parse(e.newValue));
+        } catch (err) {
+          console.error('Failed to sync audit logs from storage event:', err);
         }
       }
     };
@@ -309,23 +354,259 @@ export default function App() {
     }));
   };
 
+  // Open HQ Deletion Modal with selected application(s)
+  const handleOpenHQDeleteModal = (apps: ProcurementApplication[]) => {
+    if (user.role !== 'hq') {
+      alert(
+        'Akses Terhad: Fungsi pelupusan rekod ini hanya dibenarkan kepada Urus Setia HQ yang diberi kuasa.'
+      );
+      return;
+    }
+    if (apps.length === 0) return;
+    setAppsToDelete(apps);
+    setIsHQDeleteModalOpen(true);
+  };
+
+  // Perform confirmed deletion by HQ user with audit logging
+  const handleConfirmHQDelete = async (
+    apps: ProcurementApplication[],
+    reasonCategory: DeletionReasonCategory,
+    reasonText: string
+  ) => {
+    if (user.role !== 'hq') {
+      alert(
+        'Akses Terhad: Hanya Urus Setia HQ yang diberi kuasa dibenarkan memadam rekod permohonan.'
+      );
+      return;
+    }
+
+    const idsToDelete = apps.map((a) => a.id);
+
+    // 1. Remove from local applications state immediately
+    setApplications((prev) => prev.filter((a) => !idsToDelete.includes(a.id)));
+
+    // 2. Remove permanently from Firestore
+    try {
+      await batchDeleteApplicationsFromFirestore(idsToDelete);
+    } catch (err) {
+      console.error('Error in batch deleting from Firestore:', err);
+    }
+
+    // 3. Generate system audit log records
+    const now = new Date();
+    const nowIso = now.toISOString();
+    const formattedDate = now.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+    const formattedTime = now.toLocaleTimeString('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true,
+    });
+
+    const newLogs: DeletionAuditLog[] = apps.map((app) => ({
+      id: `audit-del-${Date.now()}-${Math.random().toString(36).substr(2, 8)}`,
+      action: apps.length > 1 ? 'BATCH_DELETE_PPT_RECORDS' : 'DELETE_PPT_RECORD',
+      actionLabel: `Pelupusan Rekod Permohonan PPT (${app.referenceNo})`,
+      timestamp: nowIso,
+      dateFormatted: formattedDate,
+      timeFormatted: formattedTime,
+      hqUser: {
+        name: user.name,
+        email: user.email,
+        department: user.department,
+        role: user.role,
+        staffId: user.staffId || 'perolehan_hsaas',
+      },
+      applicationRef: {
+        id: app.id,
+        referenceNo: app.referenceNo,
+        title: app.title,
+        department: app.department,
+        estimatedCost: app.estimatedCost,
+        year: app.year,
+        serviceType: app.serviceType,
+        status: app.status,
+        applicantName: app.applicantName,
+        applicantEmail: app.applicantEmail,
+      },
+      reasonCategory,
+      reason: reasonText,
+      ipAddress: '10.221.113.18',
+      deviceInfo: typeof navigator !== 'undefined' ? navigator.userAgent : 'HSAAS Workstation',
+    }));
+
+    // 4. Save audit log records to Firestore and state
+    newLogs.forEach((record) => {
+      addAuditLogToFirestore(record);
+    });
+    setAuditLogs((prev) => [...newLogs, ...prev]);
+
+    // 5. Update last updated timestamp
+    setUser((prev) => ({
+      ...prev,
+      updateDate: `${formattedDate} ${formattedTime}`,
+    }));
+  };
+
+  const handleClearAuditLogs = () => {
+    if (user.role !== 'hq') {
+      alert('Akses Terhad: Hanya Urus Setia HQ dibenarkan menguruskan rekod audit.');
+      return;
+    }
+    if (window.confirm('Adakah anda pasti mahu mengosongkan rekod Log Audit Pelupusan Sistem? Tindakan ini tidak boleh dikembalikan.')) {
+      setAuditLogs([]);
+      clearAuditLogsFromFirestore();
+    }
+  };
+
   const handleDeleteApplication = (id: string) => {
     const targetApp = applications.find((a) => a.id === id);
-    if (targetApp) {
-      const isOwner =
-        (targetApp.applicantEmail && targetApp.applicantEmail.toLowerCase() === user.email.toLowerCase()) ||
-        (!targetApp.applicantEmail && targetApp.applicantName && targetApp.applicantName.toLowerCase() === user.name.toLowerCase()) ||
-        (!targetApp.applicantEmail && !targetApp.applicantName);
+    if (!targetApp) return;
 
-      if (!isOwner) {
-        alert(`Akses Dibataskan: Anda hanya boleh memadam permohonan milik anda sendiri (${user.name}). Permohonan ini milik ${targetApp.applicantName}.`);
-        return;
-      }
+    if (user.role !== 'hq') {
+      alert(
+        'Akses Terhad: Fungsi pemadaman permohonan telah dikeluarkan daripada akses pemohon. Sila hubungi Urus Setia HQ untuk permohonan pelupusan rekod.'
+      );
+      return;
     }
-    if (window.confirm('Adakah anda pasti mahu memadam permohonan perolehan ini?')) {
-      setApplications((prev) => prev.filter((a) => a.id !== id));
-      deleteApplicationFromFirestore(id);
+
+    // HQ User: Trigger the official confirmation modal with reason and audit trail
+    handleOpenHQDeleteModal([targetApp]);
+  };
+
+  // Open HQ Amount Adjustment Modal
+  const handleOpenAdjustModal = (app: ProcurementApplication) => {
+    if (user.role !== 'hq') {
+      alert('Akses Terhad: Penyelarasan amaun permohonan hanya dibenarkan kepada Urus Setia HQ yang diberi kuasa.');
+      return;
     }
+    setAppToAdjust(app);
+    setIsAdjustModalOpen(true);
+  };
+
+  // Confirm HQ Amount Adjustment with full audit trail
+  const handleConfirmAdjustment = (
+    applicationId: string,
+    newAmount: number,
+    justification: string
+  ) => {
+    if (user.role !== 'hq') {
+      alert('Akses Terhad: Hanya Urus Setia HQ yang dibenarkan melaraskan amaun permohonan.');
+      return;
+    }
+
+    const targetApp = applications.find((a) => a.id === applicationId);
+    if (!targetApp) return;
+
+    const originalCost = targetApp.originalEstimatedCost ?? targetApp.estimatedCost;
+    const diff = Math.round((newAmount - originalCost) * 100) / 100;
+    const percentage = originalCost > 0 ? (diff / originalCost) * 100 : 0;
+    const direction: 'increased' | 'reduced' | 'unchanged' =
+      diff < -0.01 ? 'reduced' : diff > 0.01 ? 'increased' : 'unchanged';
+
+    const now = new Date();
+    const nowIso = now.toISOString();
+    const formattedDate = now.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+    const formattedTime = now.toLocaleTimeString('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true,
+    });
+
+    const newAdjustmentRecord: AmountAdjustment = {
+      id: `adj-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+      originalAmount: originalCost,
+      adjustedAmount: newAmount,
+      differenceAmount: diff,
+      percentageChange: percentage,
+      direction,
+      adjustmentDate: nowIso,
+      dateFormatted: formattedDate,
+      timeFormatted: formattedTime,
+      adjustedBy: user.name,
+      adjustedByEmail: user.email,
+      adjustedByRole: user.role,
+      justification: justification.trim(),
+    };
+
+    const updatedApp: ProcurementApplication = {
+      ...targetApp,
+      estimatedCost: newAmount,
+      originalEstimatedCost: originalCost,
+      isAmountAdjusted: true,
+      adjustedAmount: newAmount,
+      adjustmentDifference: diff,
+      adjustmentPercentage: percentage,
+      adjustmentDirection: direction,
+      lastAdjustedAt: nowIso,
+      lastAdjustedBy: user.name,
+      amountAdjustments: [newAdjustmentRecord, ...(targetApp.amountAdjustments || [])],
+      updatedAt: nowIso,
+    };
+
+    setApplications((prev) =>
+      prev.map((app) => (app.id === applicationId ? updatedApp : app))
+    );
+    saveApplicationToFirestore(updatedApp);
+
+    // Record in system audit log
+    const auditRecord: DeletionAuditLog = {
+      id: `audit-adj-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+      action: 'ADJUST_REQUESTED_AMOUNT',
+      actionLabel: `Penyelarasan Amaun PPT (${targetApp.referenceNo}): ${direction === 'reduced' ? 'Diturunkan' : 'Dinaikkan'} kepada RM ${newAmount.toLocaleString()}`,
+      timestamp: nowIso,
+      dateFormatted: formattedDate,
+      timeFormatted: formattedTime,
+      hqUser: {
+        name: user.name,
+        email: user.email,
+        department: user.department,
+        role: user.role,
+        staffId: user.staffId || 'perolehan_hsaas',
+      },
+      applicationRef: {
+        id: targetApp.id,
+        referenceNo: targetApp.referenceNo,
+        title: targetApp.title,
+        department: targetApp.department,
+        estimatedCost: newAmount,
+        originalCost: originalCost,
+        adjustedCost: newAmount,
+        differenceCost: diff,
+        year: targetApp.year,
+        serviceType: targetApp.serviceType,
+        status: targetApp.status,
+        applicantName: targetApp.applicantName,
+        applicantEmail: targetApp.applicantEmail,
+      },
+      reason: justification.trim(),
+      adjustmentDetail: {
+        originalAmount: originalCost,
+        adjustedAmount: newAmount,
+        differenceAmount: diff,
+        percentageChange: percentage,
+        direction,
+      },
+      ipAddress: '10.221.113.18',
+      deviceInfo: typeof navigator !== 'undefined' ? navigator.userAgent : 'HSAAS Workstation',
+    };
+
+    addAuditLogToFirestore(auditRecord);
+    setAuditLogs((prev) => [auditRecord, ...prev]);
+
+    setUser((prev) => ({
+      ...prev,
+      updateDate: `${formattedDate} ${formattedTime}`,
+    }));
   };
 
   const handleSubmitDraft = (id: string) => {
@@ -354,22 +635,126 @@ export default function App() {
     }
   };
 
-  // HQ Review Decision Handler
-  const handleHQDecision = (id: string, decision: HQDecision) => {
+  // HQ Review Decision Handler with Amount Adjustment support
+  const handleHQDecision = (
+    id: string,
+    decision: HQDecision,
+    adjustedAmount?: number,
+    adjustmentNote?: string
+  ) => {
     const targetApp = applications.find((a) => a.id === id);
-    if (targetApp) {
-      const updatedApp: ProcurementApplication = {
-        ...targetApp,
-        status: decision.status,
-        hqDecision: decision,
-        updatedAt: decision.decisionDate,
+    if (!targetApp) return;
+
+    let updatedApp: ProcurementApplication = {
+      ...targetApp,
+      status: decision.status,
+      hqDecision: decision,
+      updatedAt: decision.decisionDate,
+    };
+
+    if (
+      adjustedAmount !== undefined &&
+      adjustedAmount > 0 &&
+      Math.abs(adjustedAmount - (targetApp.originalEstimatedCost ?? targetApp.estimatedCost)) > 0.01
+    ) {
+      const originalCost = targetApp.originalEstimatedCost ?? targetApp.estimatedCost;
+      const diff = Math.round((adjustedAmount - originalCost) * 100) / 100;
+      const percentage = originalCost > 0 ? (diff / originalCost) * 100 : 0;
+      const direction: 'increased' | 'reduced' | 'unchanged' =
+        diff < -0.01 ? 'reduced' : diff > 0.01 ? 'increased' : 'unchanged';
+
+      const now = new Date();
+      const formattedDate = now.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      });
+      const formattedTime = now.toLocaleTimeString('en-GB', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true,
+      });
+
+      const newAdj: AmountAdjustment = {
+        id: `adj-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+        originalAmount: originalCost,
+        adjustedAmount: adjustedAmount,
+        differenceAmount: diff,
+        percentageChange: percentage,
+        direction,
+        adjustmentDate: decision.decisionDate,
+        dateFormatted: formattedDate,
+        timeFormatted: formattedTime,
+        adjustedBy: user.name,
+        adjustedByEmail: user.email,
+        adjustedByRole: user.role,
+        justification: adjustmentNote || decision.justification,
       };
 
-      setApplications((prev) =>
-        prev.map((app) => (app.id === id ? updatedApp : app))
-      );
-      saveApplicationToFirestore(updatedApp);
+      updatedApp = {
+        ...updatedApp,
+        estimatedCost: adjustedAmount,
+        originalEstimatedCost: originalCost,
+        isAmountAdjusted: true,
+        adjustedAmount: adjustedAmount,
+        adjustmentDifference: diff,
+        adjustmentPercentage: percentage,
+        adjustmentDirection: direction,
+        lastAdjustedAt: decision.decisionDate,
+        lastAdjustedBy: user.name,
+        amountAdjustments: [newAdj, ...(targetApp.amountAdjustments || [])],
+      };
+
+      // Also record system audit log
+      const auditRecord: DeletionAuditLog = {
+        id: `audit-adj-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+        action: 'ADJUST_REQUESTED_AMOUNT',
+        actionLabel: `Penyelarasan Amaun Semasa Kelulusan PPT (${targetApp.referenceNo}): ${direction === 'reduced' ? 'Diturunkan' : 'Dinaikkan'} kepada RM ${adjustedAmount.toLocaleString()}`,
+        timestamp: decision.decisionDate,
+        dateFormatted: formattedDate,
+        timeFormatted: formattedTime,
+        hqUser: {
+          name: user.name,
+          email: user.email,
+          department: user.department,
+          role: user.role,
+          staffId: user.staffId || 'perolehan_hsaas',
+        },
+        applicationRef: {
+          id: targetApp.id,
+          referenceNo: targetApp.referenceNo,
+          title: targetApp.title,
+          department: targetApp.department,
+          estimatedCost: adjustedAmount,
+          originalCost: originalCost,
+          adjustedCost: adjustedAmount,
+          differenceCost: diff,
+          year: targetApp.year,
+          serviceType: targetApp.serviceType,
+          status: decision.status,
+          applicantName: targetApp.applicantName,
+          applicantEmail: targetApp.applicantEmail,
+        },
+        reason: adjustmentNote || decision.justification,
+        adjustmentDetail: {
+          originalAmount: originalCost,
+          adjustedAmount: adjustedAmount,
+          differenceAmount: diff,
+          percentageChange: percentage,
+          direction,
+        },
+        ipAddress: '10.221.113.18',
+        deviceInfo: typeof navigator !== 'undefined' ? navigator.userAgent : 'HSAAS Workstation',
+      };
+      addAuditLogToFirestore(auditRecord);
+      setAuditLogs((prev) => [auditRecord, ...prev]);
     }
+
+    setApplications((prev) =>
+      prev.map((app) => (app.id === id ? updatedApp : app))
+    );
+    saveApplicationToFirestore(updatedApp);
 
     const formattedTimestamp = new Date().toLocaleString('en-GB', {
       day: '2-digit',
@@ -421,6 +806,10 @@ export default function App() {
             }}
             onDeleteApplication={handleDeleteApplication}
             onSubmitDraft={handleSubmitDraft}
+            onHQDeleteRequest={handleOpenHQDeleteModal}
+            onOpenAuditLogModal={() => setIsLoginHistoryOpen(true)}
+            auditLogsCount={auditLogs.length}
+            onOpenAdjustAmount={handleOpenAdjustModal}
           />
         )}
 
@@ -443,6 +832,7 @@ export default function App() {
               onOpenLogin={() => setIsLoginModalOpen(true)}
               onClearAllApplications={handleClearAllApplications}
               onDeleteApplication={handleDeleteApplication}
+              onOpenAdjustAmount={handleOpenAdjustModal}
             />
           ) : (
             <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-md text-center max-w-xl mx-auto space-y-4 my-10">
@@ -530,8 +920,33 @@ export default function App() {
         isOpen={isLoginHistoryOpen}
         onClose={() => setIsLoginHistoryOpen(false)}
         logs={loginLogs}
+        auditLogs={auditLogs}
         user={user}
         onClearLogs={() => setLoginLogs([])}
+        onClearAuditLogs={handleClearAuditLogs}
+        defaultTab={user.role === 'hq' ? 'adjustment' : 'login'}
+      />
+
+      <HQDeleteConfirmationModal
+        isOpen={isHQDeleteModalOpen}
+        onClose={() => {
+          setIsHQDeleteModalOpen(false);
+          setAppsToDelete([]);
+        }}
+        applicationsToDelete={appsToDelete}
+        hqUser={user}
+        onConfirmDelete={handleConfirmHQDelete}
+      />
+
+      <HQAmountAdjustModal
+        isOpen={isAdjustModalOpen}
+        onClose={() => {
+          setIsAdjustModalOpen(false);
+          setAppToAdjust(null);
+        }}
+        application={appToAdjust}
+        user={user}
+        onConfirmAdjustment={handleConfirmAdjustment}
       />
 
       <ApplicationFormModal
@@ -553,6 +968,7 @@ export default function App() {
           setIsFormModalOpen(true);
         }}
         onDelete={handleDeleteApplication}
+        onOpenAdjustAmount={handleOpenAdjustModal}
       />
 
       <HQReviewActionModal

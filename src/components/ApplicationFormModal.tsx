@@ -113,6 +113,10 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
       ? editingApplication.referenceNo
       : `PPT-${year}-${deptCode}-${Math.floor(100 + Math.random() * 900)}`;
 
+    const originalCost = editingApplication?.isAmountAdjusted
+      ? (editingApplication.originalEstimatedCost ?? editingApplication.estimatedCost)
+      : costNum;
+
     const application: ProcurementApplication = {
       id: editingApplication ? editingApplication.id : `ppt-${Date.now()}`,
       referenceNo: refNo,
@@ -125,7 +129,16 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
       expenditureCategoryName: catObj ? catObj.name : 'Services',
       expectedInvitationMonth: invitationMonth,
       expectedInvitationYear: invitationYear,
-      estimatedCost: costNum,
+      estimatedCost: editingApplication?.isAmountAdjusted ? editingApplication.estimatedCost : costNum,
+      originalEstimatedCost: originalCost,
+      isAmountAdjusted: editingApplication?.isAmountAdjusted,
+      adjustedAmount: editingApplication?.adjustedAmount,
+      adjustmentDifference: editingApplication?.adjustmentDifference,
+      adjustmentPercentage: editingApplication?.adjustmentPercentage,
+      adjustmentDirection: editingApplication?.adjustmentDirection,
+      lastAdjustedAt: editingApplication?.lastAdjustedAt,
+      lastAdjustedBy: editingApplication?.lastAdjustedBy,
+      amountAdjustments: editingApplication?.amountAdjustments,
       remarksJustification: remarksJustification.trim(),
 
       department: targetDept,

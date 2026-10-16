@@ -2,7 +2,7 @@
   "entities": {
     "applications": {
       "title": "Procurement Applications",
-      "description": "Procurement applications submitted by departments",
+      "description": "Procurement applications submitted by departments with HQ Review amount adjustments",
       "properties": {
         "id": { "type": "string" },
         "referenceNo": { "type": "string" },
@@ -16,6 +16,15 @@
         "expectedInvitationMonth": { "type": "string" },
         "expectedInvitationYear": { "type": "number" },
         "estimatedCost": { "type": "number" },
+        "originalEstimatedCost": { "type": "number" },
+        "isAmountAdjusted": { "type": "boolean" },
+        "adjustedAmount": { "type": "number" },
+        "adjustmentDifference": { "type": "number" },
+        "adjustmentPercentage": { "type": "number" },
+        "adjustmentDirection": { "type": "string" },
+        "lastAdjustedAt": { "type": "string" },
+        "lastAdjustedBy": { "type": "string" },
+        "amountAdjustments": { "type": "array" },
         "remarksJustification": { "type": "string" },
         "department": { "type": "string" },
         "applicantName": { "type": "string" },
@@ -42,6 +51,22 @@
         "email": { "type": "string" },
         "department": { "type": "string" },
         "loginTimestamp": { "type": "string" }
+      }
+    },
+    "audit_logs": {
+      "title": "System Audit Logs",
+      "description": "HQ Deletion and Amount Adjustment Audit Trail",
+      "properties": {
+        "id": { "type": "string" },
+        "action": { "type": "string" },
+        "actionLabel": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "dateFormatted": { "type": "string" },
+        "timeFormatted": { "type": "string" },
+        "hqUser": { "type": "object" },
+        "applicationRef": { "type": "object" },
+        "reason": { "type": "string" },
+        "adjustmentDetail": { "type": "object" }
       }
     }
   }

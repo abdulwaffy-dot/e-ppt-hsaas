@@ -15,7 +15,7 @@ import {
   User as FirebaseUser
 } from 'firebase/auth';
 import { db, auth } from './firebase';
-import { ProcurementApplication, AnnualBudgets, LoginRecord, UserProfile } from '../types';
+import { ProcurementApplication, AnnualBudgets, LoginRecord, UserProfile, DeletionAuditLog } from '../types';
 import { INITIAL_APPLICATIONS, INITIAL_ANNUAL_BUDGETS, INITIAL_LOGIN_LOGS } from '../data/mockData';
 
 // Sanitizer to eliminate undefined values that cause Firestore setDoc/updateDoc to throw
@@ -157,6 +157,21 @@ export async function deleteApplicationFromFirestore(id: string) {
   }
 }
 
+export async function batchDeleteApplicationsFromFirestore(ids: string[]) {
+  try {
+    const batch = writeBatch(db);
+    ids.forEach((id) => {
+      const docRef = doc(db, 'applications', id);
+      batch.delete(docRef);
+    });
+    await batch.commit();
+    console.log(`Successfully batch deleted ${ids.length} applications from Firestore`);
+  } catch (err) {
+    console.error('Failed to batch delete applications from Firestore:', err);
+    throw err;
+  }
+}
+
 // ==================== ANNUAL BUDGETS SYNC ====================
 
 export function subscribeToAnnualBudgets(onUpdate: (budgets: AnnualBudgets) => void) {
@@ -269,5 +284,54 @@ export async function saveUserProfileToFirestore(user: UserProfile) {
     await setDoc(docRef, sanitizeForFirestore(user), { merge: true });
   } catch (err) {
     console.error('Failed to save user profile to Firestore:', err);
+  }
+}
+
+// ==================== SYSTEM AUDIT LOGS SYNC ====================
+
+export function subscribeToAuditLogs(onUpdate: (logs: DeletionAuditLog[]) => void) {
+  const auditLogsRef = collection(db, 'audit_logs');
+
+  const unsubscribe = onSnapshot(
+    auditLogsRef,
+    (snapshot) => {
+      const logsList: DeletionAuditLog[] = [];
+      snapshot.forEach((docSnap) => {
+        logsList.push(docSnap.data() as DeletionAuditLog);
+      });
+      // Sort newest first
+      logsList.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      onUpdate(logsList);
+    },
+    (error) => {
+      console.error('Firestore audit logs subscription error:', error);
+    }
+  );
+
+  return unsubscribe;
+}
+
+export async function addAuditLogToFirestore(record: DeletionAuditLog) {
+  try {
+    const docRef = doc(db, 'audit_logs', record.id);
+    await setDoc(docRef, sanitizeForFirestore(record));
+    console.log('Successfully added deletion audit log to Firestore:', record.id, record.applicationRef.referenceNo);
+  } catch (err) {
+    console.error('Failed to add audit log to Firestore:', err);
+  }
+}
+
+export async function clearAuditLogsFromFirestore() {
+  try {
+    const auditLogsRef = collection(db, 'audit_logs');
+    const snap = await getDocs(auditLogsRef);
+    if (!snap.empty) {
+      const batch = writeBatch(db);
+      snap.forEach((d) => batch.delete(d.ref));
+      await batch.commit();
+      console.log('Successfully cleared audit logs from Firestore');
+    }
+  } catch (err) {
+    console.error('Failed to clear audit logs from Firestore:', err);
   }
 }

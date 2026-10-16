@@ -23,6 +23,76 @@ export interface LoginRecord {
   deviceInfo: string;
 }
 
+export type DeletionReasonCategory =
+  | 'unnecessary'
+  | 'invalid'
+  | 'duplicate'
+  | 'cancelled'
+  | 'other';
+
+export type AuditActionType =
+  | 'DELETE_PPT_RECORD'
+  | 'BATCH_DELETE_PPT_RECORDS'
+  | 'ADJUST_REQUESTED_AMOUNT';
+
+export interface AmountAdjustment {
+  id: string;
+  originalAmount: number;
+  adjustedAmount: number;
+  differenceAmount: number; // adjustedAmount - originalAmount
+  percentageChange: number; // percentage change relative to original
+  direction: 'increased' | 'reduced' | 'unchanged';
+  adjustmentDate: string; // ISO format
+  dateFormatted: string; // e.g. "16 Oct 2026"
+  timeFormatted: string; // e.g. "11:30:00 AM"
+  adjustedBy: string; // HQ user name
+  adjustedByEmail: string; // HQ user email
+  adjustedByRole?: string;
+  justification: string;
+}
+
+export interface DeletionAuditLog {
+  id: string;
+  action: AuditActionType;
+  actionLabel: string;
+  timestamp: string; // ISO format
+  dateFormatted: string; // e.g. "10 Sep 2026"
+  timeFormatted: string; // e.g. "08:45:12 AM"
+  hqUser: {
+    name: string;
+    email: string;
+    department: string;
+    role: string;
+    staffId?: string;
+  };
+  applicationRef: {
+    id: string;
+    referenceNo: string;
+    title: string;
+    department: string;
+    estimatedCost: number;
+    originalCost?: number;
+    adjustedCost?: number;
+    differenceCost?: number;
+    year: number;
+    serviceType?: string;
+    status: string;
+    applicantName?: string;
+    applicantEmail?: string;
+  };
+  reasonCategory?: DeletionReasonCategory;
+  reason: string;
+  ipAddress?: string;
+  deviceInfo?: string;
+  adjustmentDetail?: {
+    originalAmount: number;
+    adjustedAmount: number;
+    differenceAmount: number;
+    percentageChange: number;
+    direction: 'increased' | 'reduced' | 'unchanged';
+  };
+}
+
 export type AllocationType = 'Operating 14005';
 
 export type ProcurementMethod = 'SH' | 'T' | 'PT';
@@ -117,7 +187,16 @@ export interface ProcurementApplication {
   expenditureCategoryName: string;
   expectedInvitationMonth: string; // e.g., "October"
   expectedInvitationYear: number; // e.g., 2026
-  estimatedCost: number; // in RM
+  estimatedCost: number; // in RM (effective / current amount used for budgets and allocations)
+  originalEstimatedCost?: number; // Original requested amount submitted by applicant (in RM)
+  isAmountAdjusted?: boolean; // True if amount has been modified by HQ Review
+  adjustedAmount?: number; // Current revised / adjusted amount set by HQ Review
+  adjustmentDifference?: number; // adjustedAmount - originalEstimatedCost
+  adjustmentPercentage?: number; // percentage change relative to original requested amount
+  adjustmentDirection?: 'increased' | 'reduced' | 'unchanged';
+  lastAdjustedAt?: string; // ISO date string of last adjustment
+  lastAdjustedBy?: string; // Name of HQ reviewer
+  amountAdjustments?: AmountAdjustment[]; // Complete immutable audit trail of adjustments
   remarksJustification: string;
   
   // Department & Applicant Metadata

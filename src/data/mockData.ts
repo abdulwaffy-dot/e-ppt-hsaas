@@ -5,7 +5,7 @@ export const INITIAL_APPLICATIONS: ProcurementApplication[] = [];
 export const INITIAL_LOGIN_LOGS: LoginRecord[] = [
   {
     id: 'log-001',
-    name: 'Abdul Waffy',
+    name: 'ABDUL WAFFY',
     email: 'abdulwaffy@upm.edu.my',
     department: 'Information Technology Department',
     loginTimestamp: '2026-07-28T23:17:50Z',
@@ -14,7 +14,7 @@ export const INITIAL_LOGIN_LOGS: LoginRecord[] = [
   },
   {
     id: 'log-002',
-    name: 'Dr. Farhan Azman',
+    name: 'DR. FARHAN AZMAN',
     email: 'farhan.azman@upm.edu.my',
     department: 'Radiology Department',
     loginTimestamp: '2026-07-28T14:32:00Z',

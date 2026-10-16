@@ -28,8 +28,12 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onLoginSuccess, 
   const [showPassword, setShowPassword] = useState(false);
 
   // Department Applicant fields - Simplified to Official Name & Official Institutional Email
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [name, setName] = useState(
+    initialUser?.name && initialUser.role === 'applicant' ? initialUser.name.toUpperCase() : ''
+  );
+  const [email, setEmail] = useState(
+    initialUser?.email && initialUser.role === 'applicant' ? initialUser.email : ''
+  );
   
   const [error, setError] = useState<string | null>(null);
 
@@ -107,7 +111,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onLoginSuccess, 
     }
 
     // Department Applicant Role
-    const trimmedName = name.trim();
+    const trimmedName = name.trim().toUpperCase();
     let trimmedEmail = email.trim().toLowerCase();
 
     if (!trimmedName) {
@@ -312,15 +316,21 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onLoginSuccess, 
                   <input
                     type="text"
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Masukkan Nama Penuh (e.g. Abdul Waffy)"
-                    className="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600/30 focus:border-red-600"
+                    onChange={(e) => setName(e.target.value.toUpperCase())}
+                    onBlur={(e) => setName((prev) => prev.toUpperCase())}
+                    placeholder="Masukkan Nama Penuh (e.g. ABDUL WAFFY)"
+                    className="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600/30 focus:border-red-600 uppercase"
                     required
                   />
                 </div>
-                <p className="text-[10px] text-slate-500 mt-1">
-                  Nama rasmi pemohon PPT
-                </p>
+                <div className="flex items-center justify-between mt-1">
+                  <p className="text-[10px] text-slate-500">
+                    Nama rasmi pemohon PPT
+                  </p>
+                  <span className="text-[9px] font-semibold text-red-700 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded tracking-wide">
+                    HURUF BESAR / UPPERCASE
+                  </span>
+                </div>
               </div>
 
               {/* Email address */}

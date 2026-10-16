@@ -30,6 +30,7 @@ import {
   addAuditLogToFirestore,
   clearAuditLogsFromFirestore,
   authenticateWithFirebase,
+  saveUserProfileToFirestore,
 } from './lib/firebaseService';
 
 import { Navbar } from './components/Navbar';
@@ -64,6 +65,8 @@ export default function App() {
           parsed.name = 'Perolehan_hsaas';
           parsed.email = 'perolehan_hsaas@upm.edu.my';
           localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(parsed));
+        } else if (parsed.role === 'applicant' && parsed.name) {
+          parsed.name = parsed.name.toUpperCase();
         }
         return parsed;
       } catch (e) {
@@ -79,7 +82,7 @@ export default function App() {
       second: '2-digit',
     });
     return {
-      name: 'Abdul Waffy',
+      name: 'ABDUL WAFFY',
       email: 'abdulwaffy@upm.edu.my',
       department: 'Information Technology Department',
       loginDate: formattedTimestamp,
@@ -296,15 +299,24 @@ export default function App() {
 
   // Handlers for Login & Identity
   const handleLoginSuccess = (updatedUser: UserProfile, newRecord: LoginRecord) => {
-    setUser(updatedUser);
-    setLoginLogs((prev) => [newRecord, ...prev]);
-    addLoginLogToFirestore(newRecord);
+    const finalUser: UserProfile = {
+      ...updatedUser,
+      name: updatedUser.role === 'applicant' ? updatedUser.name.trim().toUpperCase() : updatedUser.name,
+    };
+    const finalRecord: LoginRecord = {
+      ...newRecord,
+      name: updatedUser.role === 'applicant' ? newRecord.name.trim().toUpperCase() : newRecord.name,
+    };
+
+    setUser(finalUser);
+    setLoginLogs((prev) => [finalRecord, ...prev]);
+    addLoginLogToFirestore(finalRecord);
     setIsLoggedIn(true);
     sessionStorage.setItem('upm_eppt_logged_in', 'true');
     setIsLoginModalOpen(false);
 
     // Auto navigate tab if HQ role
-    if (updatedUser.role === 'hq') {
+    if (finalUser.role === 'hq') {
       setActiveTab('hq');
     } else {
       setActiveTab('applicant');
@@ -318,8 +330,13 @@ export default function App() {
   };
 
   const handleUpdateUser = (updatedUser: UserProfile) => {
-    setUser(updatedUser);
-    if (updatedUser.role === 'hq') {
+    const finalUser: UserProfile = {
+      ...updatedUser,
+      name: updatedUser.role === 'applicant' ? updatedUser.name.trim().toUpperCase() : updatedUser.name,
+    };
+    setUser(finalUser);
+    saveUserProfileToFirestore(finalUser);
+    if (finalUser.role === 'hq') {
       setActiveTab('hq');
     }
   };

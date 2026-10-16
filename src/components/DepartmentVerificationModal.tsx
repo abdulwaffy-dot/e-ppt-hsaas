@@ -16,7 +16,7 @@ export const DepartmentVerificationModal: React.FC<DepartmentVerificationModalPr
   onUpdateUser,
 }) => {
   const [department, setDepartment] = useState(user.department);
-  const [name, setName] = useState(user.name);
+  const [name, setName] = useState(user.name.toUpperCase());
   const [role, setRole] = useState<'applicant' | 'hq'>(user.role);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
@@ -33,9 +33,11 @@ export const DepartmentVerificationModal: React.FC<DepartmentVerificationModalPr
       second: '2-digit',
     });
 
+    const uppercaseName = name.trim().toUpperCase();
+
     onUpdateUser({
       ...user,
-      name,
+      name: uppercaseName,
       department,
       role,
       updateDate: formattedTimestamp,
@@ -70,17 +72,27 @@ export const DepartmentVerificationModal: React.FC<DepartmentVerificationModalPr
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Official Name</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-semibold text-slate-700">Official Name</label>
+              <span className="text-[9px] font-semibold text-red-700 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded tracking-wide">
+                HURUF BESAR / UPPERCASE
+              </span>
+            </div>
             <div className="relative">
               <User className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
               <input
                 type="text"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600/30"
+                onChange={(e) => setName(e.target.value.toUpperCase())}
+                onBlur={(e) => setName((prev) => prev.toUpperCase())}
+                placeholder="NAMA PENUH RASMI (HURUF BESAR)"
+                className="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600/30 uppercase"
                 required
               />
             </div>
+            <p className="text-[10px] text-slate-500 mt-1">
+              Nama rasmi ditukar kepada huruf besar secara automatik semasa ditaip
+            </p>
           </div>
 
           <div>

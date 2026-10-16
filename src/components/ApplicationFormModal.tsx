@@ -142,7 +142,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
       remarksJustification: remarksJustification.trim(),
 
       department: targetDept,
-      applicantName: user.name,
+      applicantName: (user.name || '').toUpperCase(),
       applicantEmail: user.email,
       createdAt: editingApplication ? editingApplication.createdAt : nowIso,
       updatedAt: nowIso,

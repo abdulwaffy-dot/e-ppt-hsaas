@@ -326,23 +326,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
             </div>
           </div>
 
-          {/* Expenditure Categories */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Expenditure Categories <span className="text-red-600">*</span>
-            </label>
-            <select
-              value={expenditureCode}
-              onChange={(e) => setExpenditureCode(e.target.value)}
-              className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600/30 bg-white font-medium"
-            >
-              {EXPENDITURE_CATEGORIES.map((cat) => (
-                <option key={cat.code} value={cat.code}>
-                  {cat.label}
-                </option>
-              ))}
-            </select>
-          </div>
+
 
           {/* Expected Invitation (Month/Year) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-3.5 border border-slate-200 rounded-lg">

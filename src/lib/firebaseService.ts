@@ -15,7 +15,7 @@ import {
   User as FirebaseUser
 } from 'firebase/auth';
 import { db, auth } from './firebase';
-import { ProcurementApplication, AnnualBudgets, LoginRecord, UserProfile, DeletionAuditLog } from '../types';
+import { ProcurementApplication, AnnualBudgets, LoginRecord, UserProfile, DeletionAuditLog, WhitelistUser } from '../types';
 import { INITIAL_APPLICATIONS, INITIAL_ANNUAL_BUDGETS, INITIAL_LOGIN_LOGS } from '../data/mockData';
 
 // Sanitizer to eliminate undefined values that cause Firestore setDoc/updateDoc to throw
@@ -333,5 +333,71 @@ export async function clearAuditLogsFromFirestore() {
     }
   } catch (err) {
     console.error('Failed to clear audit logs from Firestore:', err);
+  }
+}
+
+// ==================== WHITELIST USERS SYNC ====================
+
+export function subscribeToWhitelistUsers(onUpdate: (users: WhitelistUser[]) => void) {
+  const whitelistRef = collection(db, 'whitelist_users');
+
+  const unsubscribe = onSnapshot(
+    whitelistRef,
+    (snapshot) => {
+      if (snapshot.empty) {
+        onUpdate([]);
+      } else {
+        const usersList: WhitelistUser[] = [];
+        snapshot.forEach((docSnap) => {
+          usersList.push(docSnap.data() as WhitelistUser);
+        });
+        usersList.sort((a, b) => a.name.localeCompare(b.name));
+        onUpdate(usersList);
+      }
+    },
+    (error) => {
+      console.error('Firestore whitelist users subscription error:', error);
+    }
+  );
+
+  return unsubscribe;
+}
+
+export async function saveWhitelistUserToFirestore(user: WhitelistUser) {
+  try {
+    const docRef = doc(db, 'whitelist_users', user.id);
+    await setDoc(docRef, sanitizeForFirestore(user), { merge: true });
+    console.log('Successfully saved whitelist user to Firestore:', user.email);
+  } catch (err) {
+    console.error('Failed to save whitelist user to Firestore:', err);
+  }
+}
+
+export async function deleteWhitelistUserFromFirestore(userId: string) {
+  try {
+    const docRef = doc(db, 'whitelist_users', userId);
+    await deleteDoc(docRef);
+    console.log('Successfully deleted whitelist user from Firestore:', userId);
+  } catch (err) {
+    console.error('Failed to delete whitelist user from Firestore:', err);
+  }
+}
+
+export async function seedInitialWhitelistUsersToFirestore(users: WhitelistUser[]) {
+  try {
+    const whitelistRef = collection(db, 'whitelist_users');
+    const snap = await getDocs(whitelistRef);
+    if (snap.empty) {
+      console.log('Seeding initial 32 whitelist users into Firestore...');
+      const batch = writeBatch(db);
+      users.forEach((u) => {
+        const docRef = doc(db, 'whitelist_users', u.id);
+        batch.set(docRef, sanitizeForFirestore(u));
+      });
+      await batch.commit();
+      console.log('Successfully seeded initial whitelist users to Firestore.');
+    }
+  } catch (err) {
+    console.warn('Could not seed initial whitelist users to Firestore:', err);
   }
 }

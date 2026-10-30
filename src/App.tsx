@@ -14,13 +14,16 @@ import {
   DeletionAuditLog,
   DeletionReasonCategory,
   AmountAdjustment,
+  WhitelistUser,
 } from './types';
 import { INITIAL_APPLICATIONS, INITIAL_LOGIN_LOGS, INITIAL_ANNUAL_BUDGETS } from './data/mockData';
+import { INITIAL_WHITELIST_USERS, STORAGE_KEY_WHITELIST } from './data/whitelistUsers';
 import {
   subscribeToApplications,
   subscribeToAnnualBudgets,
   subscribeToLoginLogs,
   subscribeToAuditLogs,
+  subscribeToWhitelistUsers,
   saveApplicationToFirestore,
   deleteApplicationFromFirestore,
   batchDeleteApplicationsFromFirestore,
@@ -31,6 +34,9 @@ import {
   clearAuditLogsFromFirestore,
   authenticateWithFirebase,
   saveUserProfileToFirestore,
+  saveWhitelistUserToFirestore,
+  deleteWhitelistUserFromFirestore,
+  seedInitialWhitelistUsersToFirestore,
 } from './lib/firebaseService';
 
 import { Navbar } from './components/Navbar';
@@ -47,6 +53,8 @@ import { HQDeleteConfirmationModal } from './components/HQDeleteConfirmationModa
 import { DepartmentApplicationsList } from './components/DepartmentApplicationsList';
 import { HQReviewPanel } from './components/HQReviewPanel';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
+import { WhitelistLoginScreen } from './components/WhitelistLoginScreen';
+import { WhitelistManagementModal } from './components/WhitelistManagementModal';
 
 const STORAGE_KEY_USER = 'upm_eppt_user_profile';
 const STORAGE_KEY_APPS = 'upm_eppt_applications';
@@ -55,20 +63,40 @@ const STORAGE_KEY_BUDGETS = 'upm_eppt_annual_budgets';
 const STORAGE_KEY_AUDIT_LOGS = 'upm_eppt_audit_logs';
 
 export default function App() {
-  // Load initial persistent user or set default
+  // Load whitelist users directory
+  const [whitelistUsers, setWhitelistUsers] = useState<WhitelistUser[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_WHITELIST);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {
+        console.error('Failed to parse saved whitelist users:', e);
+      }
+    }
+    return INITIAL_WHITELIST_USERS;
+  });
+
+  // Load initial persistent user or set default approved user
   const [user, setUser] = useState<UserProfile>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_USER);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (parsed.role === 'hq' && (parsed.email === 'bursar.hq@upm.edu.my' || parsed.name.includes('Bursar'))) {
-          parsed.name = 'Perolehan_hsaas';
+        if (parsed.role === 'hq') {
+          parsed.name = 'PEROLEHAN HSAAS (SYSTEM ADMINISTRATOR)';
           parsed.email = 'perolehan_hsaas@upm.edu.my';
           localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(parsed));
-        } else if (parsed.role === 'applicant' && parsed.name) {
-          parsed.name = parsed.name.toUpperCase();
+          return parsed;
+        } else if (parsed.role === 'applicant' && parsed.email) {
+          const isApproved = INITIAL_WHITELIST_USERS.some(
+            (u) => u.email.toLowerCase() === parsed.email.toLowerCase()
+          );
+          if (isApproved) {
+            parsed.name = (parsed.name || '').toUpperCase();
+            return parsed;
+          }
         }
-        return parsed;
       } catch (e) {
         console.error('Failed to parse saved user:', e);
       }
@@ -81,9 +109,10 @@ export default function App() {
       minute: '2-digit',
       second: '2-digit',
     });
+    // Default to first approved whitelist user
     return {
-      name: 'ABDUL WAFFY',
-      email: 'abdulwaffy@upm.edu.my',
+      name: 'WAN ZUL HAIKAL HAFIZ BIN WAN ZUKIMAN',
+      email: 'zulhaikal@upm.edu.my',
       department: 'Information Technology Department',
       loginDate: formattedTimestamp,
       updateDate: formattedTimestamp,
@@ -208,6 +237,7 @@ export default function App() {
   const [actionDecisionType, setActionDecisionType] = useState<'Approved' | 'Rejected' | null>(null);
   const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
   const [appToAdjust, setAppToAdjust] = useState<ProcurementApplication | null>(null);
+  const [isWhitelistModalOpen, setIsWhitelistModalOpen] = useState(false);
 
   // Save to LocalStorage effects
   useEffect(() => {
@@ -233,8 +263,15 @@ export default function App() {
     localStorage.setItem(STORAGE_KEY_AUDIT_LOGS, JSON.stringify(auditLogs));
   }, [auditLogs]);
 
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_WHITELIST, JSON.stringify(whitelistUsers));
+  }, [whitelistUsers]);
+
   // Real-time Firestore Subscriptions
   useEffect(() => {
+    // Seed initial whitelist into Firestore if not present
+    seedInitialWhitelistUsersToFirestore(INITIAL_WHITELIST_USERS);
+
     const unsubApps = subscribeToApplications((firestoreApps) => {
       setApplications(firestoreApps);
     });
@@ -251,11 +288,18 @@ export default function App() {
       setAuditLogs(firestoreAuditLogs);
     });
 
+    const unsubWhitelist = subscribeToWhitelistUsers((firestoreUsers) => {
+      if (firestoreUsers && firestoreUsers.length > 0) {
+        setWhitelistUsers(firestoreUsers);
+      }
+    });
+
     return () => {
       unsubApps();
       unsubBudgets();
       unsubLogs();
       unsubAuditLogs();
+      unsubWhitelist();
     };
   }, []);
 
@@ -291,11 +335,37 @@ export default function App() {
           console.error('Failed to sync audit logs from storage event:', err);
         }
       }
+      if (e.key === STORAGE_KEY_WHITELIST && e.newValue) {
+        try {
+          setWhitelistUsers(JSON.parse(e.newValue));
+        } catch (err) {
+          console.error('Failed to sync whitelist from storage event:', err);
+        }
+      }
     };
 
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
+
+  // Handlers for Whitelist User Management (System Administrator Only)
+  const handleSaveWhitelistUser = (updatedUser: WhitelistUser) => {
+    setWhitelistUsers((prev) => {
+      const idx = prev.findIndex((u) => u.id === updatedUser.id);
+      if (idx >= 0) {
+        const copy = [...prev];
+        copy[idx] = updatedUser;
+        return copy;
+      }
+      return [updatedUser, ...prev];
+    });
+    saveWhitelistUserToFirestore(updatedUser);
+  };
+
+  const handleDeleteWhitelistUser = (userId: string) => {
+    setWhitelistUsers((prev) => prev.filter((u) => u.id !== userId));
+    deleteWhitelistUserFromFirestore(userId);
+  };
 
   // Handlers for Login & Identity
   const handleLoginSuccess = (updatedUser: UserProfile, newRecord: LoginRecord) => {
@@ -790,6 +860,16 @@ export default function App() {
 
   const pendingHQCount = applications.filter((a) => a.status === 'Submitted').length;
 
+  // Whitelist-Based Access Control: Unauthorized users cannot access any module, menu, or page
+  if (!isLoggedIn) {
+    return (
+      <WhitelistLoginScreen
+        whitelistUsers={whitelistUsers}
+        onLoginSuccess={handleLoginSuccess}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900 font-sans flex flex-col pb-16">
       {/* Top Navbar */}
@@ -799,6 +879,7 @@ export default function App() {
         user={user}
         onOpenVerification={() => setIsVerificationModalOpen(true)}
         onOpenLoginHistory={() => setIsLoginHistoryOpen(true)}
+        onOpenWhitelist={() => setIsWhitelistModalOpen(true)}
         onLogout={handleLogout}
         pendingHQCount={pendingHQCount}
       />
@@ -850,6 +931,7 @@ export default function App() {
               onClearAllApplications={handleClearAllApplications}
               onDeleteApplication={handleDeleteApplication}
               onOpenAdjustAmount={handleOpenAdjustModal}
+              onOpenWhitelist={() => setIsWhitelistModalOpen(true)}
             />
           ) : (
             <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-md text-center max-w-xl mx-auto space-y-4 my-10">
@@ -922,8 +1004,19 @@ export default function App() {
       {/* Modals */}
       <LoginModal
         isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
         onLoginSuccess={handleLoginSuccess}
         initialUser={user}
+        whitelistUsers={whitelistUsers}
+      />
+
+      <WhitelistManagementModal
+        isOpen={isWhitelistModalOpen}
+        onClose={() => setIsWhitelistModalOpen(false)}
+        currentUser={user}
+        whitelistUsers={whitelistUsers}
+        onSaveUser={handleSaveWhitelistUser}
+        onDeleteUser={handleDeleteWhitelistUser}
       />
 
       <DepartmentVerificationModal

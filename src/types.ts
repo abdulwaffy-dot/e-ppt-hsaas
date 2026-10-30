@@ -23,6 +23,20 @@ export interface LoginRecord {
   deviceInfo: string;
 }
 
+export interface WhitelistUser {
+  id: string;
+  name: string; // Official Name in UPPERCASE
+  email: string; // Registered Institutional Email (lowercased)
+  password: string; // Assigned secure password
+  department: string;
+  role: 'applicant' | 'hq';
+  isActive: boolean; // Managed by System Administrator
+  createdAt?: string;
+  updatedAt?: string;
+  lastLogin?: string;
+  staffId?: string;
+}
+
 export type DeletionReasonCategory =
   | 'unnecessary'
   | 'invalid'

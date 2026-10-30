@@ -128,43 +128,60 @@ export const DepartmentVerificationModal: React.FC<DepartmentVerificationModalPr
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">System Mode / Role</label>
-            <div className="grid grid-cols-2 gap-3">
-              <label
-                className={`p-2.5 rounded-lg border text-xs cursor-pointer flex items-center gap-2 transition ${
-                  role === 'applicant'
-                    ? 'bg-red-50 border-red-300 text-red-900 font-semibold'
-                    : 'bg-white border-slate-200 text-slate-600'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="role"
-                  checked={role === 'applicant'}
-                  onChange={() => setRole('applicant')}
-                  className="accent-red-700"
-                />
-                <span>Department PPT Application</span>
-              </label>
+            {user.role === 'hq' ? (
+              <div className="grid grid-cols-2 gap-3">
+                <label
+                  className={`p-2.5 rounded-lg border text-xs cursor-pointer flex items-center gap-2 transition ${
+                    role === 'applicant'
+                      ? 'bg-red-50 border-red-300 text-red-900 font-semibold'
+                      : 'bg-white border-slate-200 text-slate-600'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="role"
+                    checked={role === 'applicant'}
+                    onChange={() => setRole('applicant')}
+                    className="accent-red-700"
+                  />
+                  <span>Department PPT Application</span>
+                </label>
 
-              <label
-                className={`p-2.5 rounded-lg border text-xs cursor-pointer flex items-center gap-2 transition ${
-                  role === 'hq'
-                    ? 'bg-slate-900 border-slate-800 text-white font-semibold'
-                    : 'bg-white border-slate-200 text-slate-600'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="role"
-                  checked={role === 'hq'}
-                  onChange={() => setRole('hq')}
-                  className="accent-amber-400"
-                />
-                <span className="flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5 text-amber-400" /> HQ Reviewer
+                <label
+                  className={`p-2.5 rounded-lg border text-xs cursor-pointer flex items-center gap-2 transition ${
+                    role === 'hq'
+                      ? 'bg-slate-900 border-slate-800 text-white font-semibold'
+                      : 'bg-white border-slate-200 text-slate-600'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="role"
+                    checked={role === 'hq'}
+                    onChange={() => setRole('hq')}
+                    className="accent-amber-400"
+                  />
+                  <span className="flex items-center gap-1">
+                    <ShieldCheck className="w-3.5 h-3.5 text-amber-400" /> HQ Reviewer
+                  </span>
+                </label>
+              </div>
+            ) : (
+              <div className="p-3 bg-slate-100 border border-slate-200 rounded-lg text-xs flex items-center justify-between text-slate-700">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                  <div>
+                    <span className="font-bold block">Department PPT Application</span>
+                    <span className="text-[10px] text-slate-500">
+                      Peranan dikunci mengikut kelulusan Senarai Putih (Approved Whitelist).
+                    </span>
+                  </div>
+                </div>
+                <span className="text-[10px] bg-emerald-200 text-emerald-900 font-bold px-2 py-0.5 rounded">
+                  DILULUSKAN
                 </span>
-              </label>
-            </div>
+              </div>
+            )}
           </div>
 
           <div className="pt-2 flex justify-end gap-2">

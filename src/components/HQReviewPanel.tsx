@@ -21,6 +21,7 @@ import {
   FileText,
   Download,
   Trash2,
+  Users,
 } from 'lucide-react';
 
 interface HQReviewPanelProps {
@@ -34,6 +35,7 @@ interface HQReviewPanelProps {
   onClearAllApplications?: () => void;
   onDeleteApplication?: (id: string) => void;
   onOpenAdjustAmount?: (app: ProcurementApplication) => void;
+  onOpenWhitelist?: () => void;
 }
 
 export const HQReviewPanel: React.FC<HQReviewPanelProps> = ({
@@ -47,6 +49,7 @@ export const HQReviewPanel: React.FC<HQReviewPanelProps> = ({
   onClearAllApplications,
   onDeleteApplication,
   onOpenAdjustAmount,
+  onOpenWhitelist,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [deptFilter, setDeptFilter] = useState<string>('ALL');
@@ -184,7 +187,18 @@ export const HQReviewPanel: React.FC<HQReviewPanelProps> = ({
             </div>
           </div>
 
-          <div>
+          <div className="flex items-center gap-2">
+            {user.role === 'hq' && onOpenWhitelist && (
+              <button
+                onClick={onOpenWhitelist}
+                className="px-3.5 py-2 bg-amber-400 hover:bg-amber-500 text-slate-950 rounded-lg text-xs font-bold shadow-sm transition flex items-center gap-1.5"
+                title="Pengurusan Senarai Putih Pengguna (Approved Whitelist Directory)"
+              >
+                <Users className="w-3.5 h-3.5 text-slate-950" />
+                Pengurusan Whitelist (32 Pengguna)
+              </button>
+            )}
+
             {user.role === 'hq' ? (
               <button
                 onClick={onOpenBudgetModal}

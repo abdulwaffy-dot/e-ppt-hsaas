@@ -11,6 +11,7 @@ import {
   Sparkles,
   Share2,
   Lock,
+  Users,
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -19,6 +20,7 @@ interface NavbarProps {
   user: UserProfile;
   onOpenVerification: () => void;
   onOpenLoginHistory: () => void;
+  onOpenWhitelist?: () => void;
   onLogout: () => void;
   pendingHQCount: number;
 }
@@ -29,6 +31,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   user,
   onOpenVerification,
   onOpenLoginHistory,
+  onOpenWhitelist,
   onLogout,
   pendingHQCount,
 }) => {
@@ -141,6 +144,17 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               <span>Live Cloud Sync</span>
             </div>
+
+            {user.role === 'hq' && onOpenWhitelist && (
+              <button
+                onClick={onOpenWhitelist}
+                className="hidden md:flex items-center gap-1.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs shadow transition cursor-pointer"
+                title="Pengurusan Senarai Putih Pengguna (Approved Whitelist)"
+              >
+                <Users className="w-3.5 h-3.5 text-slate-900" />
+                <span>Pengurusan Whitelist</span>
+              </button>
+            )}
 
             <button
               onClick={onOpenVerification}

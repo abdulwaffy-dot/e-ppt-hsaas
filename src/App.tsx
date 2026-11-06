@@ -15,6 +15,7 @@ import {
   DeletionReasonCategory,
   AmountAdjustment,
   WhitelistUser,
+  AuditActionType,
 } from './types';
 import { INITIAL_APPLICATIONS, INITIAL_LOGIN_LOGS, INITIAL_ANNUAL_BUDGETS } from './data/mockData';
 import { INITIAL_WHITELIST_USERS, STORAGE_KEY_WHITELIST } from './data/whitelistUsers';
@@ -69,7 +70,16 @@ export default function App() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const hqIdx = parsed.findIndex(
+            (u: WhitelistUser) => u.id === 'wl-hq-001' || u.email === 'perolehan_hsaas@upm.edu.my'
+          );
+          if (hqIdx >= 0 && parsed[hqIdx].password !== 'Perolehanhsaas_2026') {
+            parsed[hqIdx].password = 'Perolehanhsaas_2026';
+            localStorage.setItem(STORAGE_KEY_WHITELIST, JSON.stringify(parsed));
+          }
+          return parsed;
+        }
       } catch (e) {
         console.error('Failed to parse saved whitelist users:', e);
       }
@@ -349,22 +359,106 @@ export default function App() {
   }, []);
 
   // Handlers for Whitelist User Management (System Administrator Only)
-  const handleSaveWhitelistUser = (updatedUser: WhitelistUser) => {
+  const handleSaveWhitelistUser = (updatedUser: WhitelistUser, customReason?: string) => {
+    let actionType: AuditActionType = 'CREATE_USER_ACCOUNT';
+    let actionLabel = 'Penciptaan Akaun Pengguna Baru';
+
     setWhitelistUsers((prev) => {
       const idx = prev.findIndex((u) => u.id === updatedUser.id);
       if (idx >= 0) {
+        if (prev[idx].isActive !== updatedUser.isActive) {
+          actionType = updatedUser.isActive ? 'ACTIVATE_USER_ACCOUNT' : 'DEACTIVATE_USER_ACCOUNT';
+          actionLabel = updatedUser.isActive ? 'Pengaktifan Semula Akaun' : 'Nyahaktifkan Akaun Pengguna';
+        } else {
+          actionType = 'UPDATE_USER_ACCOUNT';
+          actionLabel = 'Kemaskini Profil Pengguna';
+        }
         const copy = [...prev];
         copy[idx] = updatedUser;
         return copy;
       }
+      actionType = 'CREATE_USER_ACCOUNT';
+      actionLabel = 'Penciptaan Akaun Pengguna Baru';
       return [updatedUser, ...prev];
     });
+
     saveWhitelistUserToFirestore(updatedUser);
+
+    // Record audit log for user management activity
+    const now = new Date();
+    const auditRecord: DeletionAuditLog = {
+      id: `audit-user-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      action: actionType,
+      actionLabel,
+      timestamp: now.toISOString(),
+      dateFormatted: now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+      timeFormatted: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      hqUser: {
+        name: user.name,
+        email: user.email,
+        department: user.department,
+        role: user.role,
+        staffId: user.staffId,
+      },
+      targetUser: {
+        id: updatedUser.id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        department: updatedUser.department,
+        role: updatedUser.role,
+        isActive: updatedUser.isActive,
+        assignedPassword: updatedUser.password,
+      },
+      reason:
+        customReason ||
+        `${actionLabel}: ${updatedUser.name} (${updatedUser.email}) - Peranan: ${
+          updatedUser.role === 'hq' ? 'Pentadbir HQ' : 'Pemohon'
+        }`,
+      deviceInfo: `${navigator.userAgent || 'Web Browser'} - User Management Module`,
+    };
+
+    setAuditLogs((prev) => [auditRecord, ...prev]);
+    addAuditLogToFirestore(auditRecord);
   };
 
-  const handleDeleteWhitelistUser = (userId: string) => {
-    setWhitelistUsers((prev) => prev.filter((u) => u.id !== userId));
-    deleteWhitelistUserFromFirestore(userId);
+  const handleDeleteWhitelistUser = (target: string | WhitelistUser) => {
+    const targetId = typeof target === 'string' ? target : target.id;
+    const targetUser = typeof target === 'string' ? whitelistUsers.find((u) => u.id === target) : target;
+
+    setWhitelistUsers((prev) => prev.filter((u) => u.id !== targetId));
+    deleteWhitelistUserFromFirestore(targetId);
+
+    if (targetUser) {
+      const now = new Date();
+      const auditRecord: DeletionAuditLog = {
+        id: `audit-user-del-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        action: 'DELETE_USER_ACCOUNT',
+        actionLabel: 'Pemadaman Akaun Pengguna',
+        timestamp: now.toISOString(),
+        dateFormatted: now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+        timeFormatted: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        hqUser: {
+          name: user.name,
+          email: user.email,
+          department: user.department,
+          role: user.role,
+          staffId: user.staffId,
+        },
+        targetUser: {
+          id: targetUser.id,
+          name: targetUser.name,
+          email: targetUser.email,
+          department: targetUser.department,
+          role: targetUser.role,
+          isActive: targetUser.isActive,
+        },
+        reason: `Pentadbir HQ memadamkan akaun ${targetUser.name} (${targetUser.email}) daripada Senarai Putih yang diluluskan.`,
+        deviceInfo: `${navigator.userAgent || 'Web Browser'} - User Management Module`,
+      };
+
+      setAuditLogs((prev) => [auditRecord, ...prev]);
+      addAuditLogToFirestore(auditRecord);
+    }
   };
 
   // Handlers for Login & Identity
@@ -1015,6 +1109,7 @@ export default function App() {
         onClose={() => setIsWhitelistModalOpen(false)}
         currentUser={user}
         whitelistUsers={whitelistUsers}
+        auditLogs={auditLogs}
         onSaveUser={handleSaveWhitelistUser}
         onDeleteUser={handleDeleteWhitelistUser}
       />

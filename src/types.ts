@@ -47,7 +47,23 @@ export type DeletionReasonCategory =
 export type AuditActionType =
   | 'DELETE_PPT_RECORD'
   | 'BATCH_DELETE_PPT_RECORDS'
-  | 'ADJUST_REQUESTED_AMOUNT';
+  | 'ADJUST_REQUESTED_AMOUNT'
+  | 'CREATE_USER_ACCOUNT'
+  | 'UPDATE_USER_ACCOUNT'
+  | 'ACTIVATE_USER_ACCOUNT'
+  | 'DEACTIVATE_USER_ACCOUNT'
+  | 'DELETE_USER_ACCOUNT';
+
+export interface UserAuditDetail {
+  id: string;
+  name: string;
+  email: string;
+  department?: string;
+  role?: 'applicant' | 'hq';
+  isActive?: boolean;
+  assignedPassword?: string;
+  notes?: string;
+}
 
 export interface AmountAdjustment {
   id: string;
@@ -79,7 +95,7 @@ export interface DeletionAuditLog {
     role: string;
     staffId?: string;
   };
-  applicationRef: {
+  applicationRef?: {
     id: string;
     referenceNo: string;
     title: string;
@@ -94,6 +110,7 @@ export interface DeletionAuditLog {
     applicantName?: string;
     applicantEmail?: string;
   };
+  targetUser?: UserAuditDetail;
   reasonCategory?: DeletionReasonCategory;
   reason: string;
   ipAddress?: string;
@@ -147,6 +164,11 @@ export const EXPENDITURE_CATEGORIES: ExpenditureCategory[] = [
 ];
 
 export const UPM_DEPARTMENTS: string[] = [
+  'Department of Strategic Affairs and Corporate Relations',
+  'Section of Hospital Supervision',
+  'Section of Nuclear Imaging',
+  'Section of Medical Physics',
+  'Department of Medical Microbiology',
   'Finance Department : Procurement',
   'Finance Department',
   'Human Resource Department',
@@ -173,7 +195,6 @@ export const UPM_DEPARTMENTS: string[] = [
   'Pharmacy Department',
   'Pathology Department',
   'Dietetics Department',
-  'Medical Microbiology Department',
   'Community Health Department',
 ];
 

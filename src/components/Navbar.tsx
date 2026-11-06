@@ -149,10 +149,10 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 onClick={onOpenWhitelist}
                 className="hidden md:flex items-center gap-1.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs shadow transition cursor-pointer"
-                title="Pengurusan Senarai Putih Pengguna (Approved Whitelist)"
+                title="HQ Review > User Management (Pengurusan Pengguna)"
               >
                 <Users className="w-3.5 h-3.5 text-slate-900" />
-                <span>Pengurusan Whitelist</span>
+                <span>User Management</span>
               </button>
             )}
 

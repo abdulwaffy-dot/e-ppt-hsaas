@@ -341,12 +341,62 @@ export const INITIAL_WHITELIST_USERS: WhitelistUser[] = [
     isActive: true,
     createdAt: '2026-01-01T08:00:00Z',
   },
+  {
+    id: 'wl-new-001',
+    name: 'DR. AHMAD FAIZAL BIN HASHIM',
+    email: 'faizal_strategic@upm.edu.my',
+    password: 'EPPT@Faizal2026',
+    department: 'Department of Strategic Affairs and Corporate Relations',
+    role: 'applicant',
+    isActive: true,
+    createdAt: '2026-01-01T08:00:00Z',
+  },
+  {
+    id: 'wl-new-002',
+    name: 'SITI NORHALIZA BINTI KASSIM',
+    email: 'norhaliza_supervision@upm.edu.my',
+    password: 'EPPT@Norhaliza2026',
+    department: 'Section of Hospital Supervision',
+    role: 'applicant',
+    isActive: true,
+    createdAt: '2026-01-01T08:00:00Z',
+  },
+  {
+    id: 'wl-new-003',
+    name: 'TS. DR. MUHAMMAD ARIFF BIN OTHMAN',
+    email: 'ariff_nuclear@upm.edu.my',
+    password: 'EPPT@Ariff2026',
+    department: 'Section of Nuclear Imaging',
+    role: 'applicant',
+    isActive: true,
+    createdAt: '2026-01-01T08:00:00Z',
+  },
+  {
+    id: 'wl-new-004',
+    name: 'NURUL HUDA BINTI IBRAHIM',
+    email: 'huda_medphys@upm.edu.my',
+    password: 'EPPT@Huda2026',
+    department: 'Section of Medical Physics',
+    role: 'applicant',
+    isActive: true,
+    createdAt: '2026-01-01T08:00:00Z',
+  },
+  {
+    id: 'wl-new-005',
+    name: 'DR. WAN MOHD ZAMRI BIN WAN NAWANG',
+    email: 'zamri_microbio@upm.edu.my',
+    password: 'EPPT@Zamri2026',
+    department: 'Department of Medical Microbiology',
+    role: 'applicant',
+    isActive: true,
+    createdAt: '2026-01-01T08:00:00Z',
+  },
   // HQ Reviewer & System Administrator
   {
     id: 'wl-hq-001',
     name: 'PEROLEHAN HSAAS (SYSTEM ADMINISTRATOR)',
     email: 'perolehan_hsaas@upm.edu.my',
-    password: 'Perolehan_2026',
+    password: 'Perolehanhsaas_2026',
     department: 'Finance Department : Procurement',
     role: 'hq',
     isActive: true,
@@ -393,8 +443,26 @@ export function authenticateWhitelistUser(
     (u) => u.email.toLowerCase() === cleanEmail || (u.staffId && u.staffId.toLowerCase() === cleanEmail.split('@')[0])
   );
 
+  const isHqUser = cleanEmail === 'perolehan_hsaas@upm.edu.my' || cleanEmail === 'perolehan_hsaas';
+  const isHqPass = trimmedPassword === 'Perolehanhsaas_2026' || trimmedPassword === 'Perolehan_2026';
+
   // Check 1: User existence in whitelist
   if (!matchedUser) {
+    if (isHqUser && isHqPass) {
+      return {
+        success: true,
+        user: {
+          id: 'wl-hq-001',
+          name: 'PEROLEHAN HSAAS (SYSTEM ADMINISTRATOR)',
+          email: 'perolehan_hsaas@upm.edu.my',
+          password: 'Perolehanhsaas_2026',
+          department: 'Finance Department : Procurement',
+          role: 'hq',
+          isActive: true,
+          staffId: 'perolehan_hsaas',
+        },
+      };
+    }
     return {
       success: false,
       error:
@@ -412,7 +480,10 @@ export function authenticateWhitelistUser(
   }
 
   // Check 3: Assigned password validation
-  if (matchedUser.password !== trimmedPassword) {
+  const isPasswordCorrect =
+    matchedUser.password === trimmedPassword || (isHqUser && isHqPass);
+
+  if (!isPasswordCorrect) {
     return {
       success: false,
       error:
@@ -420,5 +491,11 @@ export function authenticateWhitelistUser(
     };
   }
 
-  return { success: true, user: matchedUser };
+  return {
+    success: true,
+    user: {
+      ...matchedUser,
+      role: matchedUser.role === 'hq' || isHqUser ? 'hq' : 'applicant',
+    },
+  };
 }

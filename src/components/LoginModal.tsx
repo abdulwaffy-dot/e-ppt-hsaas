@@ -35,7 +35,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   const [role, setRole] = useState<'applicant' | 'hq'>(initialUser?.role || 'applicant');
 
   // HQ Reviewer specific credentials
-  const [hqId, setHqId] = useState('');
+  const [hqId, setHqId] = useState('perolehan_hsaas@upm.edu.my');
   const [hqPassword, setHqPassword] = useState('');
   const [showHqPassword, setShowHqPassword] = useState(false);
 
@@ -74,18 +74,23 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         return;
       }
 
+      const isMatchHqCreds =
+        (trimmedHqId.toLowerCase() === 'perolehan_hsaas@upm.edu.my' || trimmedHqId.toLowerCase() === 'perolehan_hsaas') &&
+        (trimmedHqPassword === 'Perolehanhsaas_2026' || trimmedHqPassword === 'Perolehan_2026');
+
       const hqAdmin = whitelistUsers.find(
         (u) =>
           u.role === 'hq' &&
-          (u.staffId === trimmedHqId || u.email.toLowerCase() === trimmedHqId.toLowerCase()) &&
-          u.password === trimmedHqPassword
-      ) || (trimmedHqId === 'perolehan_hsaas' && trimmedHqPassword === 'Perolehan_2026' ? {
+          (u.staffId?.toLowerCase() === trimmedHqId.toLowerCase() || u.email.toLowerCase() === trimmedHqId.toLowerCase()) &&
+          (u.password === trimmedHqPassword || (isMatchHqCreds && u.email === 'perolehan_hsaas@upm.edu.my'))
+      ) || (isMatchHqCreds ? {
         name: 'PEROLEHAN HSAAS (SYSTEM ADMINISTRATOR)',
         email: 'perolehan_hsaas@upm.edu.my',
         department: 'Finance Department : Procurement',
         role: 'hq' as const,
         staffId: 'perolehan_hsaas',
         isActive: true,
+        password: 'Perolehanhsaas_2026',
       } : null);
 
       if (!hqAdmin) {
@@ -159,13 +164,19 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       second: '2-digit',
     });
 
+    const userRole: 'applicant' | 'hq' =
+      approvedUser.role === 'hq' || approvedUser.email.toLowerCase() === 'perolehan_hsaas@upm.edu.my'
+        ? 'hq'
+        : 'applicant';
+
     const updatedUser: UserProfile = {
       name: approvedUser.name.toUpperCase(),
       email: approvedUser.email.toLowerCase(),
       department: approvedUser.department,
       loginDate: formattedTimestamp,
       updateDate: formattedTimestamp,
-      role: 'applicant',
+      role: userRole,
+      staffId: approvedUser.staffId || (userRole === 'hq' ? 'perolehan_hsaas' : undefined),
     };
 
     const newRecord: LoginRecord = {
@@ -280,7 +291,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                     type="text"
                     value={hqId}
                     onChange={(e) => setHqId(e.target.value)}
-                    placeholder="perolehan_hsaas"
+                    placeholder="perolehan_hsaas@upm.edu.my"
                     className="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-800/30 focus:border-slate-800 font-mono"
                     required
                   />
@@ -323,13 +334,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           ) : (
             /* Department PPT Application Whitelist Login */
             <div className="space-y-4">
-              <div className="bg-red-50/80 border border-red-200/80 rounded-lg p-3 text-red-950 text-xs">
-                <span className="font-bold block">Akses Terhad Senarai Putih (Approved Whitelist)</span>
-                <span className="text-[11px] text-red-800">
-                  Hanya 32 pengguna jabatan yang diluluskan dibenarkan log masuk menggunakan emel dan kata laluan yang telah ditetapkan.
-                </span>
-              </div>
-
               {/* Registered Email */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">

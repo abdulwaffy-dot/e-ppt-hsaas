@@ -388,7 +388,7 @@ export async function seedInitialWhitelistUsersToFirestore(users: WhitelistUser[
     const whitelistRef = collection(db, 'whitelist_users');
     const snap = await getDocs(whitelistRef);
     if (snap.empty) {
-      console.log('Seeding initial 32 whitelist users into Firestore...');
+      console.log('Seeding initial whitelist users into Firestore...');
       const batch = writeBatch(db);
       users.forEach((u) => {
         const docRef = doc(db, 'whitelist_users', u.id);
@@ -396,6 +396,13 @@ export async function seedInitialWhitelistUsersToFirestore(users: WhitelistUser[
       });
       await batch.commit();
       console.log('Successfully seeded initial whitelist users to Firestore.');
+    } else {
+      // Ensure HQ Administrator credentials are up-to-date in Firestore
+      const hqUser = users.find((u) => u.id === 'wl-hq-001' || u.email === 'perolehan_hsaas@upm.edu.my');
+      if (hqUser) {
+        const hqDocRef = doc(db, 'whitelist_users', hqUser.id);
+        await setDoc(hqDocRef, sanitizeForFirestore(hqUser), { merge: true });
+      }
     }
   } catch (err) {
     console.warn('Could not seed initial whitelist users to Firestore:', err);

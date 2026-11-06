@@ -191,11 +191,11 @@ export const HQReviewPanel: React.FC<HQReviewPanelProps> = ({
             {user.role === 'hq' && onOpenWhitelist && (
               <button
                 onClick={onOpenWhitelist}
-                className="px-3.5 py-2 bg-amber-400 hover:bg-amber-500 text-slate-950 rounded-lg text-xs font-bold shadow-sm transition flex items-center gap-1.5"
-                title="Pengurusan Senarai Putih Pengguna (Approved Whitelist Directory)"
+                className="px-3.5 py-2 bg-amber-400 hover:bg-amber-500 text-slate-950 rounded-lg text-xs font-bold shadow-sm transition flex items-center gap-1.5 cursor-pointer"
+                title="HQ Review > User Management (Pengurusan Akaun Pengguna & Senarai Putih)"
               >
                 <Users className="w-3.5 h-3.5 text-slate-950" />
-                Pengurusan Whitelist (32 Pengguna)
+                <span>User Management</span>
               </button>
             )}
 

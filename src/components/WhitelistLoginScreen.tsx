@@ -32,7 +32,7 @@ export const WhitelistLoginScreen: React.FC<WhitelistLoginScreenProps> = ({
   const [showApplicantPassword, setShowApplicantPassword] = useState(false);
 
   // HQ Reviewer / Admin login state
-  const [hqId, setHqId] = useState('');
+  const [hqId, setHqId] = useState('perolehan_hsaas@upm.edu.my');
   const [hqPassword, setHqPassword] = useState('');
   const [showHqPassword, setShowHqPassword] = useState(false);
 
@@ -66,13 +66,19 @@ export const WhitelistLoginScreen: React.FC<WhitelistLoginScreenProps> = ({
       second: '2-digit',
     });
 
+    const userRole: 'applicant' | 'hq' =
+      approvedUser.role === 'hq' || approvedUser.email.toLowerCase() === 'perolehan_hsaas@upm.edu.my'
+        ? 'hq'
+        : 'applicant';
+
     const userProfile: UserProfile = {
       name: approvedUser.name.toUpperCase(),
       email: approvedUser.email.toLowerCase(),
       department: approvedUser.department,
       loginDate: formattedTimestamp,
       updateDate: formattedTimestamp,
-      role: 'applicant',
+      role: userRole,
+      staffId: approvedUser.staffId || (userRole === 'hq' ? 'perolehan_hsaas' : undefined),
     };
 
     const newRecord: LoginRecord = {
@@ -107,18 +113,23 @@ export const WhitelistLoginScreen: React.FC<WhitelistLoginScreenProps> = ({
       return;
     }
 
+    const isMatchHqCreds =
+      (trimmedId.toLowerCase() === 'perolehan_hsaas@upm.edu.my' || trimmedId.toLowerCase() === 'perolehan_hsaas') &&
+      (trimmedPassword === 'Perolehanhsaas_2026' || trimmedPassword === 'Perolehan_2026');
+
     const hqAdmin = whitelistUsers.find(
       (u) =>
         u.role === 'hq' &&
-        (u.staffId === trimmedId || u.email.toLowerCase() === trimmedId.toLowerCase()) &&
-        u.password === trimmedPassword
-    ) || (trimmedId === 'perolehan_hsaas' && trimmedPassword === 'Perolehan_2026' ? {
+        (u.staffId?.toLowerCase() === trimmedId.toLowerCase() || u.email.toLowerCase() === trimmedId.toLowerCase()) &&
+        (u.password === trimmedPassword || (isMatchHqCreds && u.email === 'perolehan_hsaas@upm.edu.my'))
+    ) || (isMatchHqCreds ? {
       name: 'PEROLEHAN HSAAS (SYSTEM ADMINISTRATOR)',
       email: 'perolehan_hsaas@upm.edu.my',
       department: 'Finance Department : Procurement',
       role: 'hq' as const,
       staffId: 'perolehan_hsaas',
       isActive: true,
+      password: 'Perolehanhsaas_2026',
     } : null);
 
     if (!hqAdmin) {
@@ -249,16 +260,6 @@ export const WhitelistLoginScreen: React.FC<WhitelistLoginScreenProps> = ({
             {activeTab === 'applicant' ? (
               /* Applicant Login Form */
               <form onSubmit={handleApplicantSubmit} className="space-y-4">
-                <div className="p-3 bg-amber-50/90 border border-amber-200 rounded-xl text-xs text-amber-950 space-y-1">
-                  <div className="font-bold flex items-center gap-1.5 text-amber-900">
-                    <Info className="w-4 h-4 text-amber-600" />
-                    <span>Akses Senarai Putih Pemohon (Whitelist Only)</span>
-                  </div>
-                  <p className="text-[11px] leading-relaxed text-amber-800">
-                    Sistem ini hanya membenarkan akses kepada <strong>32 pengguna jabatan yang diluluskan</strong> menggunakan <strong>emel rasmi</strong> dan <strong>kata laluan yang telah ditetapkan</strong>.
-                  </p>
-                </div>
-
                 {/* Registered Email */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
@@ -353,14 +354,11 @@ export const WhitelistLoginScreen: React.FC<WhitelistLoginScreenProps> = ({
                         setHqId(e.target.value);
                         setError(null);
                       }}
-                      placeholder="perolehan_hsaas"
+                      placeholder="perolehan_hsaas@upm.edu.my"
                       className="w-full pl-9 pr-3 py-2.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/30 focus:border-slate-900 font-mono bg-white text-slate-900 shadow-sm"
                       required
                     />
                   </div>
-                  <p className="text-[10px] text-slate-500 mt-1">
-                    ID rasmi: <code className="bg-slate-100 px-1 py-0.5 rounded font-bold">perolehan_hsaas</code>
-                  </p>
                 </div>
 
                 {/* HQ Password */}

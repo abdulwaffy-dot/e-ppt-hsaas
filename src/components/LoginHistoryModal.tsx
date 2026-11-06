@@ -55,12 +55,12 @@ export const LoginHistoryModal: React.FC<LoginHistoryModalProps> = ({
   const filteredDeletionLogs = deletionLogs.filter((log) => {
     const term = searchTerm.toLowerCase();
     return (
-      log.applicationRef.referenceNo.toLowerCase().includes(term) ||
-      log.applicationRef.title.toLowerCase().includes(term) ||
-      log.applicationRef.department.toLowerCase().includes(term) ||
-      log.hqUser.name.toLowerCase().includes(term) ||
-      log.hqUser.email.toLowerCase().includes(term) ||
-      log.reason.toLowerCase().includes(term)
+      (log.applicationRef?.referenceNo || '').toLowerCase().includes(term) ||
+      (log.applicationRef?.title || '').toLowerCase().includes(term) ||
+      (log.applicationRef?.department || '').toLowerCase().includes(term) ||
+      (log.hqUser?.name || '').toLowerCase().includes(term) ||
+      (log.hqUser?.email || '').toLowerCase().includes(term) ||
+      (log.reason || '').toLowerCase().includes(term)
     );
   });
 
@@ -69,12 +69,12 @@ export const LoginHistoryModal: React.FC<LoginHistoryModalProps> = ({
   const filteredAdjustmentLogs = adjustmentLogs.filter((log) => {
     const term = searchTerm.toLowerCase();
     return (
-      log.applicationRef.referenceNo.toLowerCase().includes(term) ||
-      log.applicationRef.title.toLowerCase().includes(term) ||
-      log.applicationRef.department.toLowerCase().includes(term) ||
-      log.hqUser.name.toLowerCase().includes(term) ||
-      log.hqUser.email.toLowerCase().includes(term) ||
-      log.reason.toLowerCase().includes(term)
+      (log.applicationRef?.referenceNo || '').toLowerCase().includes(term) ||
+      (log.applicationRef?.title || '').toLowerCase().includes(term) ||
+      (log.applicationRef?.department || '').toLowerCase().includes(term) ||
+      (log.hqUser?.name || '').toLowerCase().includes(term) ||
+      (log.hqUser?.email || '').toLowerCase().includes(term) ||
+      (log.reason || '').toLowerCase().includes(term)
     );
   });
 

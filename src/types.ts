@@ -164,6 +164,7 @@ export const EXPENDITURE_CATEGORIES: ExpenditureCategory[] = [
 ];
 
 export const UPM_DEPARTMENTS: string[] = [
+  'Putra-iCRU',
   'Department of Strategic Affairs and Corporate Relations',
   'Section of Hospital Supervision',
   'Section of Nuclear Imaging',
